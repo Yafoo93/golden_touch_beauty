@@ -1,31 +1,28 @@
-# Environment and secrets
-.env
-.env.*
-!.env.example
-
 # Python
+.venv/
 __pycache__/
 *.py[cod]
-*$py.class
+*.sqlite3
 .pytest_cache/
-.mypy_cache/
-.ruff_cache/
 .coverage
 htmlcov/
 
-# Virtual environments
-.venv/
-venv/
-env/
-
 # Django
-*.log
-db.sqlite3
-media/
-staticfiles/
+backend/.env
+backend/media/
+backend/staticfiles/
+
+# Node and Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env.local
 
 # IDE and operating system
-.idea/
 .vscode/
+.idea/
 .DS_Store
 Thumbs.db
+
+# Logs
+*.log
