@@ -57,7 +57,7 @@ Expand the launched multi-branch platform with staff roles and assignment, advan
 - [x] Validate `python manage.py check`, migrations, and tests in the current development environment.
 - [ ] Validate frontend lint and production build from a clean setup.
 - [ ] Add formatting, linting, type checking, backend tests, frontend tests, and build checks to CI.
-- [ ] Add structured logging, request IDs, error handling, and health/readiness endpoints.
+- [x] Add structured logging, request IDs, safe error handling/reporting, and a database-aware health endpoint; deployment readiness checks remain part of staging.
 - [ ] Configure environment validation so missing variables fail with useful messages.
 - [ ] Configure media/file storage abstraction for local development and S3-compatible production storage.
 - [ ] Complete API pagination, filter, and naming conventions; `/api/v1/` versioning and the consistent error format are implemented.

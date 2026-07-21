@@ -69,7 +69,7 @@ This stage prepares the development environment. Customers will not see a finish
 - [x] Create the first owner/super-administrator account.
 - [x] Create and run an idempotent development seed command for Makola, Tse Addo, test services, test products, branch availability, and opening stock.
 - [x] Add consistent API error responses and a shared frontend error parser.
-- [ ] Add application logging and error reporting.
+- [x] Add structured application logging, request correlation IDs, safe API error references, Next.js error boundaries, and browser error reporting.
 
 ### Result
 
@@ -83,16 +83,16 @@ This stage creates the visual parts used on every public page.
 
 ### Pages and components to create
 
-- [ ] Global header with logo, Home, Services, Shop, Book Now, Cart, and Login/Account.
-- [ ] Mobile navigation menu.
-- [ ] Global footer with both Ghana branches, contacts, hours, policies, and social links.
+- [x] Global header with logo, Home, Services, Shop, Book Now, Cart, and Login/Account.
+- [x] Mobile navigation menu with accessible open/close control, active states, Escape handling, and links to Home, Services, Shop, Cart, Login/Account, and Book Now.
+- [x] Global footer with Makola and Tse Addo contacts and hours, verified map availability, draft policy links, and confirmed WhatsApp social links.
 - [ ] Reusable gold/black buttons.
 - [ ] Reusable service and product cards.
 - [ ] Reusable form fields, validation messages, loading indicators, and empty states.
 - [ ] Reusable page heading/hero section.
 - [ ] Cart item-count indicator.
 - [ ] 404 page.
-- [ ] General error page.
+- [x] General and root-level error pages with retry and automatic browser error reporting.
 - [ ] Loading screen/skeleton components.
 
 ### Routes affected

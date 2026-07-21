@@ -1,3 +1,5 @@
+import json
+import logging
 from datetime import timedelta
 from io import StringIO
 
@@ -13,6 +15,7 @@ from rest_framework.views import APIView
 
 from .models import IdempotencyRecord
 from .references import generate_reference
+from .logging import JsonFormatter
 
 
 class ValidationFailureView(APIView):
@@ -42,6 +45,22 @@ class HealthCheckTests(TestCase):
         self.assertEqual(response.json()["status"], "ok")
         self.assertNotIn("debug", response.json())
 
+    def test_request_has_correlation_header(self):
+        response = self.client.get(
+            reverse("core:health-check"),
+            HTTP_X_REQUEST_ID="local-test-123",
+        )
+
+        self.assertEqual(response["X-Request-ID"], "local-test-123")
+
+    def test_unsafe_correlation_header_is_replaced(self):
+        response = self.client.get(
+            reverse("core:health-check"),
+            HTTP_X_REQUEST_ID="unsafe request id",
+        )
+
+        self.assertNotEqual(response["X-Request-ID"], "unsafe request id")
+
 
 class ApiErrorResponseTests(TestCase):
     def setUp(self):
@@ -67,11 +86,18 @@ class ApiErrorResponseTests(TestCase):
         self.assertEqual(response.data["error"]["code"], "not_authenticated")
 
     def test_unknown_api_route_returns_json_error(self):
-        response = self.client.get("/api/v1/not-a-real-endpoint/")
+        response = self.client.get(
+            "/api/v1/not-a-real-endpoint/",
+            HTTP_X_REQUEST_ID="missing-route-123",
+        )
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.json()["error"]["code"], "not_found")
         self.assertEqual(response["Content-Type"], "application/json")
+        self.assertEqual(
+            response.json()["error"]["request_id"],
+            "missing-route-123",
+        )
 
     def test_method_not_allowed_uses_standard_envelope(self):
         response = self.client.post(reverse("core:health-check"))
@@ -90,6 +116,55 @@ class ApiErrorResponseTests(TestCase):
         )
         self.assertEqual(response.data["error"]["code"], "server_error")
         self.assertNotIn("Sensitive internal failure text", str(response.data))
+
+
+class ClientErrorReportingTests(TestCase):
+    def test_valid_client_error_is_accepted_and_logged(self):
+        with self.assertLogs("golden_touch.health", level="ERROR") as logs:
+            response = self.client.post(
+                reverse("core:client-error-report"),
+                {
+                    "name": "RenderError",
+                    "message": "Test browser render failure",
+                    "digest": "digest-123",
+                    "path": "/services",
+                },
+                content_type="application/json",
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        self.assertIn("client_error_reported", logs.output[0])
+
+    def test_client_error_requires_a_message(self):
+        response = self.client.post(
+            reverse("core:client-error-report"),
+            {"name": "RenderError"},
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.json()["error"]["code"], "validation_error")
+
+
+class JsonLoggingTests(TestCase):
+    def test_formatter_outputs_machine_readable_context(self):
+        record = logging.LogRecord(
+            "golden_touch.test",
+            logging.INFO,
+            __file__,
+            1,
+            "request_completed",
+            (),
+            None,
+        )
+        record.request_id = "format-test-123"
+        record.status_code = 200
+
+        payload = json.loads(JsonFormatter().format(record))
+
+        self.assertEqual(payload["message"], "request_completed")
+        self.assertEqual(payload["request_id"], "format-test-123")
+        self.assertEqual(payload["status_code"], 200)
 
 
 class ReferenceTests(TestCase):

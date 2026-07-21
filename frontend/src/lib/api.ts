@@ -4,6 +4,7 @@ export type ApiErrorBody = {
     message: string;
     status: number;
     details: unknown;
+    request_id?: string;
   };
 };
 
@@ -11,6 +12,7 @@ export class ApiError extends Error {
   readonly code: string;
   readonly status: number;
   readonly details: unknown;
+  readonly requestId?: string;
 
   constructor(body: ApiErrorBody) {
     super(body.error.message);
@@ -18,6 +20,7 @@ export class ApiError extends Error {
     this.code = body.error.code;
     this.status = body.error.status;
     this.details = body.error.details;
+    this.requestId = body.error.request_id;
   }
 }
 

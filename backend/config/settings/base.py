@@ -12,6 +12,7 @@ env = environ.Env(
     DJANGO_SECURE_SSL_REDIRECT=(bool, False),
     DJANGO_SESSION_COOKIE_SECURE=(bool, False),
     DJANGO_CSRF_COOKIE_SECURE=(bool, False),
+    DJANGO_LOG_LEVEL=(str, "INFO"),
 )
 environ.Env.read_env(BASE_DIR / ".env")
 
@@ -50,6 +51,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "core.middleware.RequestLoggingMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -200,3 +202,43 @@ DEFAULT_FROM_EMAIL = env(
     "DEFAULT_FROM_EMAIL",
     default="Golden Touch Beauty Centre <noreply@goldentouch.local>",
 )
+
+# JSON stdout logs work locally and with container/cloud log collectors. Values
+# such as request bodies, cookies, authorization headers, and query strings are
+# intentionally excluded to avoid recording credentials or customer data.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "json": {"()": "core.logging.JsonFormatter"},
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "json",
+        },
+        "null": {"class": "logging.NullHandler"},
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": env("DJANGO_LOG_LEVEL"),
+    },
+    "loggers": {
+        "django.server": {
+            "handlers": ["console"],
+            "level": env("DJANGO_LOG_LEVEL"),
+            "propagate": False,
+        },
+        # RequestLoggingMiddleware already records the same event with a
+        # correlation ID and duration, so suppress Django's duplicate line.
+        "django.request": {
+            "handlers": ["null"],
+            "propagate": False,
+        },
+        "golden_touch": {
+            "handlers": ["console"],
+            "level": env("DJANGO_LOG_LEVEL"),
+            "propagate": False,
+        },
+    },
+}

@@ -77,8 +77,8 @@ def _error_message(exc, code, response_data):
     return str(getattr(exc, "detail", "The request could not be completed."))
 
 
-def error_payload(*, code, message, status_code, details=None):
-    return {
+def error_payload(*, code, message, status_code, details=None, request_id=None):
+    payload = {
         "error": {
             "code": code,
             "message": message,
@@ -86,6 +86,9 @@ def error_payload(*, code, message, status_code, details=None):
             "details": _to_plain_value(details or {}),
         }
     }
+    if request_id:
+        payload["error"]["request_id"] = request_id
+    return payload
 
 
 def api_exception_handler(exc, context):
@@ -106,6 +109,7 @@ def api_exception_handler(exc, context):
                 code="server_error",
                 message="An unexpected error occurred. Please try again later.",
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                request_id=getattr(request, "request_id", None),
             ),
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
@@ -117,5 +121,6 @@ def api_exception_handler(exc, context):
         message=_error_message(exc, code, original_data),
         status_code=response.status_code,
         details=original_data,
+        request_id=getattr(context.get("request"), "request_id", None),
     )
     return response
