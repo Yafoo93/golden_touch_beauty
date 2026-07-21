@@ -47,9 +47,10 @@ The primary language is English and the primary currency is Ghana cedis (GHS).
 | Product requirements | Drafted (PRD v1.0, 20 July 2026) |
 | Brand asset | Available |
 | UX/UI design | Not started |
-| Application architecture | Initial Django/PostgreSQL backend foundation established |
-| Backend | Django project scaffold, modular apps, custom user model, API docs, and health endpoint |
-| Web frontend and POS | Not started |
+| Application architecture | Django/PostgreSQL backend with environment-specific settings and Next.js frontend foundation |
+| Backend | Modular apps, custom user model, branch/audit/idempotency foundations, API docs, and health endpoint |
+| Web frontend | Next.js scaffold and approved visual reference; product UI implementation not started |
+| POS | Planned for Phase 1; implementation not started |
 | Payment provider | To be selected during implementation |
 | Deployment environment | Not configured |
 
@@ -395,13 +396,22 @@ pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
 
-Update `.env` with a secure development secret and valid PostgreSQL credentials, then initialize and run Django:
+From the repository root, start the local PostgreSQL service:
+
+```powershell
+docker compose up -d postgres
+```
+
+Update `.env` with a secure development secret. The example database credentials already match `compose.yaml`. Then initialize and run Django:
 
 ```powershell
 python manage.py migrate
 python manage.py createsuperuser
+python manage.py seed_development_data
 python manage.py runserver
 ```
+
+`seed_development_data` loads the two development branches, service catalogue, product catalogue, variants, branch availability, and opening stock. It is idempotent and restricted to development mode unless explicitly forced in an isolated test environment.
 
 The development endpoints are:
 
@@ -416,7 +426,7 @@ Run validation with:
 ```powershell
 python manage.py check
 python manage.py makemigrations --check --dry-run
-python manage.py test
+python manage.py test --settings=config.settings.test
 ```
 
 ### Next implementation steps
@@ -432,6 +442,12 @@ python manage.py test
 ## Documentation
 
 - [Product Requirements Document](docs/Project%20Requirement%20Document%20GTBC.docx) — authoritative requirements, workflows, scope, and acceptance criteria.
+- [Development Roadmap](docs/DEVELOPMENT_ROADMAP.md) — two-phase, implementation-ready checklist from the current foundation through commerce, booking, payments, POS, and full operations.
+- [Phase 1 Plain-Language Build Checklist](docs/PHASE_1_BUILD_CHECKLIST.md) — page-by-page production order with frontend routes, backend work, tests, and completion results.
+- [Development Business Seed Data](docs/BUSINESS_SEED_DATA.md) — approved development branch, service, product, image, and payment-provider placeholders.
+- [Draft Development Policies](docs/DRAFT_POLICIES.md) — provisional terms, cancellation/refund, delivery/returns, privacy, and disclaimer copy requiring review before production.
+- [Authentication Architecture Decision](docs/architecture/ADR-001-authentication.md) — selected same-origin Django session and CSRF strategy.
+- [API Conventions](docs/API_CONVENTIONS.md) — versioning and the standard backend/frontend error contract.
 - [Brand logo](docs/logo.png) — current repository brand asset.
 
 When this README and the PRD differ, the signed-off PRD and subsequent approved change records should take precedence.

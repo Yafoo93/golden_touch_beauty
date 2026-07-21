@@ -1,12 +1,14 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import include, path, re_path
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularRedocView,
     SpectacularSwaggerView,
 )
+
+from core.views import api_not_found
 
 
 urlpatterns = [
@@ -29,6 +31,7 @@ urlpatterns = [
         SpectacularRedocView.as_view(url_name="api-schema"),
         name="redoc",
     ),
+    re_path(r"^api/(?P<path>.*)$", api_not_found, name="api-not-found"),
 ]
 
 if settings.DEBUG:

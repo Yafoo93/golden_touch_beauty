@@ -4,11 +4,10 @@ type HealthResponse = {
   application: string;
   status: string;
   database: string;
-  debug: boolean;
 };
 
 async function getBackendHealth(): Promise<HealthResponse | null> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  const baseUrl = process.env.BACKEND_INTERNAL_URL;
 
   if (!baseUrl) {
     return null;
@@ -36,7 +35,7 @@ export default async function Home() {
     <main className="min-h-screen bg-black px-6 py-16 text-white">
       <div className="mx-auto max-w-5xl text-center">
         <Image
-          src="/images/golden-touch-logo.png"
+          src="/images/logo.png"
           alt="Golden Touch Beauty Centre"
           width={180}
           height={180}
