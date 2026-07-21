@@ -86,14 +86,14 @@ This stage creates the visual parts used on every public page.
 - [x] Global header with logo, Home, Services, Shop, Book Now, Cart, and Login/Account.
 - [x] Mobile navigation menu with accessible open/close control, active states, Escape handling, and links to Home, Services, Shop, Cart, Login/Account, and Book Now.
 - [x] Global footer with Makola and Tse Addo contacts and hours, verified map availability, draft policy links, and confirmed WhatsApp social links.
-- [ ] Reusable gold/black buttons.
-- [ ] Reusable service and product cards.
-- [ ] Reusable form fields, validation messages, loading indicators, and empty states.
-- [ ] Reusable page heading/hero section.
-- [ ] Cart item-count indicator.
-- [ ] 404 page.
+- [x] Reusable gold, black, and outline button/link components with sizes, full-width, disabled, loading, focus, and reduced-motion states.
+- [x] Reusable responsive service and product cards with images, categories, descriptions, Ghana cedi prices, business-specific metadata, stock/availability states, badges, and real navigation actions.
+- [x] Reusable accessible form fields, text areas, field and summary validation messages, inline/panel loading indicators, and configurable empty states.
+- [x] Reusable responsive page hero with eyebrow, main/accent title, description, optional optimized background image and overlay, alignment/size variants, and action area.
+- [x] Shared cart item-count state and responsive header indicators with exact accessible counts, zero-state hiding, non-negative updates, and a `99+` visual cap.
+- [x] Branded 404 page with a clear explanation and recovery links to Home, Services, and Shop.
 - [x] General and root-level error pages with retry and automatic browser error reporting.
-- [ ] Loading screen/skeleton components.
+- [x] Global route-loading screen plus reusable primitive, card, list, and full-page skeleton components with accessible status and reduced-motion behavior.
 
 ### Routes affected
 
@@ -111,9 +111,9 @@ Branching is part of Phase 1 and must exist before bookings, stock, sales, and r
 
 ### Customer pages/components
 
-- [ ] Branch selector used during booking.
-- [ ] Pickup-branch selector used during checkout.
-- [ ] Contact page section showing Makola and Tse Addo together.
+- [x] Branch selector used during booking, loaded from active PostgreSQL branch records and preserved in the booking URL.
+- [x] Pickup-branch selector used during checkout with backend validation that every requested variant quantity is covered by unreserved, available branch stock.
+- [x] Contact page showing Makola and Tse Addo together from PostgreSQL, with branch-specific address, hours, telephone, WhatsApp, email when available, and verified map state.
 
 ### Management pages
 
@@ -124,7 +124,7 @@ Branching is part of Phase 1 and must exist before bookings, stock, sales, and r
 ### Backend work
 
 - [x] Create the initial `Branch` database model.
-- [ ] Create branch list/detail APIs.
+- [x] Create public read-only active branch list/detail APIs with internal fields excluded.
 - [ ] Create owner-only branch create/update APIs.
 - [ ] Create staff-to-branch assignment records.
 - [ ] Create reusable permissions that restrict staff to assigned branches.

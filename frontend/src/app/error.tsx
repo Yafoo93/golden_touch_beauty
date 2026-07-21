@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 
+import { Button } from "@/components/ui/button";
 import { reportClientError, type ReportableError } from "@/lib/error-reporting";
 
 export default function ErrorPage({
@@ -22,9 +23,9 @@ export default function ErrorPage({
         <h1>We could not load this page.</h1>
         <p>Please try again. If the problem continues, contact Golden Touch.</p>
         {error.digest ? <p className="error-reference">Reference: {error.digest}</p> : null}
-        <button type="button" onClick={() => unstable_retry()}>
+        <Button onClick={() => unstable_retry()}>
           Try again
-        </button>
+        </Button>
       </section>
     </main>
   );

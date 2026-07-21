@@ -5,6 +5,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { useCartCount } from "@/components/cart/cart-count-context";
+import { CartItemCount } from "@/components/cart/cart-item-count";
+import { ButtonLink } from "@/components/ui/button";
+
 const navigation = [
   { href: "/", label: "Home" },
   { href: "/services", label: "Services" },
@@ -37,6 +41,7 @@ function AccountIcon() {
 export function SiteHeader() {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { itemCount: cartItemCount } = useCartCount();
 
   useEffect(() => {
     if (!isMenuOpen) return;
@@ -54,7 +59,6 @@ export function SiteHeader() {
   const isAuthenticated = false;
   const accountHref = isAuthenticated ? "/account" : "/login";
   const accountLabel = isAuthenticated ? "Account" : "Login";
-  const cartItemCount = 0;
 
   return (
     <header className="site-header">
@@ -93,27 +97,24 @@ export function SiteHeader() {
               </Link>
             );
           })}
-          <Link
+          <ButtonLink
             className="primary-nav__book"
             href="/book"
+            size="small"
             aria-current={pathname.startsWith("/book") ? "page" : undefined}
           >
             Book Now
-          </Link>
+          </ButtonLink>
         </nav>
 
         <div className="header-actions">
           <Link
             className="cart-link"
             href="/cart"
-            aria-label={`Cart, ${cartItemCount} items`}
+            aria-label={`Cart, ${cartItemCount} ${cartItemCount === 1 ? "item" : "items"}`}
           >
             <CartIcon />
-            {cartItemCount > 0 ? (
-              <span className="cart-link__count" aria-hidden="true">
-                {cartItemCount > 99 ? "99+" : cartItemCount}
-              </span>
-            ) : null}
+            <CartItemCount count={cartItemCount} />
           </Link>
           <Link className="account-link" href={accountHref}>
             <AccountIcon />
@@ -161,15 +162,12 @@ export function SiteHeader() {
             <Link
               className="mobile-nav__link"
               href="/cart"
+              aria-label={`Cart, ${cartItemCount} ${cartItemCount === 1 ? "item" : "items"}`}
               aria-current={pathname.startsWith("/cart") ? "page" : undefined}
               onClick={() => setIsMenuOpen(false)}
             >
               Cart
-              {cartItemCount > 0 ? (
-                <span className="mobile-nav__count">
-                  {cartItemCount > 99 ? "99+" : cartItemCount}
-                </span>
-              ) : null}
+              <CartItemCount count={cartItemCount} className="mobile-nav__count" />
             </Link>
             <Link
               className="mobile-nav__link"
@@ -179,14 +177,15 @@ export function SiteHeader() {
             >
               {accountLabel}
             </Link>
-            <Link
+            <ButtonLink
               className="mobile-nav__book"
               href="/book"
+              fullWidth
               aria-current={pathname.startsWith("/book") ? "page" : undefined}
               onClick={() => setIsMenuOpen(false)}
             >
               Book Now
-            </Link>
+            </ButtonLink>
           </div>
         </nav>
       ) : null}

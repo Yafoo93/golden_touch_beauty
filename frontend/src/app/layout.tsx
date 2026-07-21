@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CartCountProvider } from "@/components/cart/cart-count-context";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import "./globals.css";
@@ -20,9 +21,11 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col">
-        <SiteHeader />
-        <div className="site-content">{children}</div>
-        <SiteFooter />
+        <CartCountProvider>
+          <SiteHeader />
+          <div className="site-content">{children}</div>
+          <SiteFooter />
+        </CartCountProvider>
       </body>
     </html>
   );

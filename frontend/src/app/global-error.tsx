@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 
+import { Button } from "@/components/ui/button";
 import { reportClientError, type ReportableError } from "@/lib/error-reporting";
 import "./globals.css";
 
@@ -25,9 +26,9 @@ export default function GlobalError({
           <h1>Golden Touch is temporarily unavailable.</h1>
           <p>Please try again in a moment.</p>
           {error.digest ? <small>Reference: {error.digest}</small> : null}
-          <button type="button" onClick={() => unstable_retry()}>
+          <Button onClick={() => unstable_retry()}>
             Try again
-          </button>
+          </Button>
         </main>
       </body>
     </html>
