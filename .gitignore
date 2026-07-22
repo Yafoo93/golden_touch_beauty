@@ -15,6 +15,7 @@ backend/staticfiles/
 # Node and Next.js
 frontend/node_modules/
 frontend/.next/
+frontend/.next-dev/
 frontend/out/
 frontend/.env.local
 

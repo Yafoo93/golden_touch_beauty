@@ -39,18 +39,40 @@ function isApiErrorBody(value: unknown): value is ApiErrorBody {
   );
 }
 
+function getCookie(name: string) {
+  if (typeof document === "undefined") return undefined;
+  const prefix = `${encodeURIComponent(name)}=`;
+  const cookie = document.cookie.split("; ").find((item) => item.startsWith(prefix));
+  return cookie ? decodeURIComponent(cookie.slice(prefix.length)) : undefined;
+}
+
 export async function apiFetch<T>(
   path: string,
   init: RequestInit = {},
 ): Promise<T> {
-  const response = await fetch(`/backend-api/v1/${path.replace(/^\//, "")}`, {
-    ...init,
-    credentials: "include",
-    headers: {
-      Accept: "application/json",
-      ...init.headers,
-    },
-  });
+  const normalizedPath = path.replace(/^\/+|\/+$/g, "");
+  const timeoutController = new AbortController();
+  const timeoutId = setTimeout(() => timeoutController.abort(), 15_000);
+  const method = (init.method ?? "GET").toUpperCase();
+  const csrfToken = ["POST", "PUT", "PATCH", "DELETE"].includes(method)
+    ? getCookie("csrftoken")
+    : undefined;
+
+  let response: Response;
+  try {
+    response = await fetch(`/backend-api/v1/${normalizedPath}`, {
+      ...init,
+      credentials: "include",
+      signal: init.signal ?? timeoutController.signal,
+      headers: {
+        Accept: "application/json",
+        ...(csrfToken ? { "X-CSRFToken": csrfToken } : {}),
+        ...init.headers,
+      },
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   const body: unknown = await response.json().catch(() => null);
 
@@ -70,4 +92,8 @@ export async function apiFetch<T>(
   }
 
   return body as T;
+}
+
+export async function ensureCsrfCookie() {
+  await apiFetch<{ detail: string }>("auth/csrf/");
 }

@@ -1363,3 +1363,84 @@ textarea.form-field__control { min-height: 7rem; }
 .global-error-card .button {
   margin-top: 1.5rem;
 }
+
+.management-page { width: min(calc(100% - 3rem), 88rem); min-height: 70vh; margin-inline: auto; padding-block: clamp(2.5rem, 6vw, 5rem); }
+.management-page__header { margin-bottom: 2rem; display: flex; align-items: end; justify-content: space-between; gap: 2rem; }
+.management-page__header > div:first-child > p { color: var(--gold); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; }
+.management-page__header h1 { margin-top: 0.35rem; font-family: Georgia, "Times New Roman", serif; font-size: clamp(2.3rem, 5vw, 4rem); }
+.management-page__header > div:first-child > span { display: block; margin-top: 0.6rem; color: #969189; line-height: 1.5; }
+.management-page__summary { max-width: 26rem; padding: 1rem 1.2rem; display: grid; gap: 0.3rem; border-left: 2px solid var(--gold); background: #111; }
+.management-page__summary strong { color: var(--gold-light); }
+.management-page__summary span { color: #8f8a82; font-size: 0.82rem; line-height: 1.45; }
+.management-branch-list { display: grid; gap: 1rem; }
+.management-branch-card { padding: clamp(1.25rem, 3vw, 2rem); border: 1px solid rgba(223, 168, 36, 0.22); border-radius: 0.65rem; background: #131313; }
+.management-branch-card header { display: flex; align-items: start; justify-content: space-between; gap: 1rem; }
+.management-branch-card__code { color: var(--gold); font-size: 0.7rem; font-weight: 800; letter-spacing: 0.13em; }
+.management-branch-card h2 { margin-top: 0.25rem; font-family: Georgia, "Times New Roman", serif; font-size: 1.6rem; }
+.status-badge { padding: 0.35rem 0.65rem; border-radius: 999px; font-size: 0.72rem; font-weight: 800; }
+.status-badge--active { background: rgba(54, 180, 112, 0.13); color: #64d59a; }
+.status-badge--inactive { background: rgba(225, 111, 103, 0.12); color: #ef8f88; }
+.management-branch-card__address { margin-top: 0.75rem; color: #aaa59d; line-height: 1.5; }
+.management-branch-card dl { margin-top: 1.35rem; padding-top: 1.25rem; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.25rem; border-top: 1px solid rgba(223, 168, 36, 0.12); }
+.management-branch-card dt { color: #77726b; font-size: 0.68rem; font-weight: 750; letter-spacing: 0.08em; text-transform: uppercase; }
+.management-branch-card dd { margin-top: 0.35rem; color: #ddd7ce; font-size: 0.86rem; line-height: 1.5; }
+.management-branch-card a { color: var(--gold-light); text-decoration-thickness: 1px; text-underline-offset: 0.2rem; }
+.management-branch-card__actions { margin-top: 1.25rem; display: flex; justify-content: flex-end; }
+.management-branch-card__actions .button { text-decoration: none; }
+@media (max-width: 58rem) { .management-page__header { align-items: stretch; flex-direction: column; } .management-page__summary { max-width: none; } .management-branch-card dl { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 34rem) { .management-page { width: min(calc(100% - 2rem), 88rem); } .management-branch-card dl { grid-template-columns: 1fr; } }
+
+.management-page--form { max-width: 68rem; }
+.management-page__summary .button { margin-top: 0.7rem; justify-self: start; }
+.management-form { display: grid; gap: 1.25rem; }
+.management-form__section { padding: clamp(1.25rem, 3vw, 2rem); border: 1px solid rgba(223, 168, 36, 0.22); border-radius: 0.65rem; background: #131313; }
+.management-form__section-heading { margin-bottom: 1.4rem; }
+.management-form__section-heading h2 { font-family: Georgia, "Times New Roman", serif; font-size: 1.45rem; }
+.management-form__section-heading p { margin-top: 0.35rem; color: #8f8a82; font-size: 0.86rem; line-height: 1.5; }
+.management-form__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.15rem; }
+.management-form__wide { grid-column: 1 / -1; }
+.management-form__days { margin-bottom: 1.25rem; border: 0; }
+.management-form__days legend { margin-bottom: 0.65rem; color: #d7d1c8; font-size: 0.78rem; font-weight: 750; text-transform: uppercase; }
+.management-form__days label { display: inline-flex; margin: 0 0.5rem 0.5rem 0; }
+.management-form__days input { position: absolute; opacity: 0; }
+.management-form__days span { min-width: 3.4rem; padding: 0.65rem 0.75rem; border: 1px solid rgba(223, 168, 36, 0.28); border-radius: 0.35rem; color: #aaa59d; text-align: center; text-transform: capitalize; cursor: pointer; }
+.management-form__days input:checked + span { border-color: var(--gold); background: rgba(223, 168, 36, 0.14); color: var(--gold-light); }
+.management-form__days input:focus-visible + span { outline: 2px solid var(--gold-light); outline-offset: 2px; }
+.management-form__toggle { margin-top: 1.25rem; display: flex; align-items: start; gap: 0.75rem; color: #ddd7ce; cursor: pointer; }
+.management-form__toggle input { margin-top: 0.25rem; accent-color: var(--gold); }
+.management-form__toggle span { display: grid; gap: 0.2rem; }
+.management-form__toggle small { color: #8f8a82; }
+.management-form__actions { display: flex; justify-content: flex-end; gap: 0.75rem; }
+@media (max-width: 42rem) { .management-form__grid { grid-template-columns: 1fr; } .management-form__wide { grid-column: auto; } .management-form__actions { flex-direction: column-reverse; } .management-form__actions .button { width: 100%; } }
+
+.auth-page { width: min(calc(100% - 2rem), 38rem); min-height: 72vh; margin-inline: auto; padding-block: clamp(2.5rem, 7vw, 5rem); }
+.auth-page__intro { margin-bottom: 2rem; text-align: center; }
+.auth-page__intro > p, .policy-page header > p { color: var(--gold); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; }
+.auth-page__intro h1, .policy-page h1 { margin-top: 0.45rem; font-family: Georgia, "Times New Roman", serif; font-size: clamp(2.5rem, 7vw, 4rem); }
+.auth-page__intro > span, .policy-page header > span { display: block; margin-top: 0.55rem; color: #969189; line-height: 1.5; }
+.auth-form, .auth-success { padding: clamp(1.25rem, 4vw, 2rem); display: grid; gap: 1.15rem; border: 1px solid rgba(223, 168, 36, 0.24); border-radius: 0.65rem; background: #131313; }
+.auth-form__passwords { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.auth-form__consents { display: grid; gap: 0.85rem; padding-block: 0.5rem; }
+.consent-field { display: flex; align-items: flex-start; gap: 0.7rem; color: #aaa59d; font-size: 0.86rem; line-height: 1.5; cursor: pointer; }
+.consent-field input { flex: 0 0 auto; margin-top: 0.25rem; accent-color: var(--gold); }
+.consent-field a, .auth-form__alternate a { color: var(--gold-light); text-underline-offset: 0.18rem; }
+.auth-form__alternate { color: #8f8a82; font-size: 0.88rem; text-align: center; }
+.auth-form__helper { margin-top: -0.35rem; text-align: right; }
+.auth-form__helper a { color: var(--gold-light); font-size: 0.84rem; text-underline-offset: 0.18rem; }
+.auth-success { text-align: center; }
+.auth-success__icon { width: 3.5rem; height: 3.5rem; margin-inline: auto; display: grid; place-items: center; border-radius: 50%; background: var(--gold); color: #090909; font-size: 1.6rem; font-weight: 900; }
+.auth-success__icon--mail { font-size: 1.35rem; }
+.auth-success h2 { font-family: Georgia, "Times New Roman", serif; font-size: 2rem; }
+.auth-success p { color: #aaa59d; line-height: 1.55; }
+.auth-success .auth-success__note { color: #77726b; font-size: 0.8rem; }
+.auth-success dl { display: grid; gap: 0.5rem; text-align: left; }
+.auth-success dl div { display: flex; justify-content: space-between; gap: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(223, 168, 36, 0.12); }
+.auth-success dt { color: #77726b; }
+.auth-success dd { overflow-wrap: anywhere; color: #ddd7ce; }
+.policy-page { width: min(calc(100% - 2rem), 56rem); min-height: 70vh; margin-inline: auto; padding-block: clamp(3rem, 8vw, 6rem); }
+.policy-page header { margin-bottom: 2.5rem; }
+.policy-page section { scroll-margin-top: 7rem; padding: 1.6rem; border: 1px solid rgba(223, 168, 36, 0.2); background: #131313; }
+.policy-page section + section { margin-top: 1rem; }
+.policy-page h2 { font-family: Georgia, "Times New Roman", serif; font-size: 1.7rem; }
+.policy-page section p { margin-top: 0.8rem; color: #aaa59d; line-height: 1.7; }
+@media (max-width: 36rem) { .auth-form__passwords { grid-template-columns: 1fr; } }
