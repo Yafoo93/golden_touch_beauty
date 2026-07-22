@@ -51,6 +51,7 @@ export function LoginForm() {
         <p>You are signed in securely.</p>
         {user.is_superuser ? <ButtonLink href="/management/branches" fullWidth>Open management</ButtonLink> : <ButtonLink href="/book" fullWidth>Book an appointment</ButtonLink>}
         <ButtonLink href="/" variant="outline" fullWidth>Return home</ButtonLink>
+        <ButtonLink href="/logout" variant="black" fullWidth>Sign out</ButtonLink>
       </section>
     );
   }

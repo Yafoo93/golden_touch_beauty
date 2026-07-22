@@ -148,7 +148,7 @@ This is where the login and registration pages are built.
 - [x] `/reset-password/[token]` — choose a new password.
 - [x] `/verify-email` — explain that verification is required and allow resend.
 - [x] `/verify-email/[token]` — process the verification link.
-- [ ] `/logout` action — invalidate the server session and return to the home page.
+- [x] `/logout` action — invalidate the server session and return to the home page.
 
 ### Staff login
 
@@ -161,7 +161,7 @@ This is where the login and registration pages are built.
 - [x] `GET /api/v1/auth/csrf/` — set/read the CSRF token required for secure form submission.
 - [x] `POST /api/v1/auth/register/` — create a customer account.
 - [x] `POST /api/v1/auth/login/` — authenticate by email or phone and create a secure session.
-- [ ] `POST /api/v1/auth/logout/` — destroy the session.
+- [x] `POST /api/v1/auth/logout/` — destroy the session.
 - [ ] `GET /api/v1/auth/me/` — return the currently logged-in user and permissions.
 - [x] `POST /api/v1/auth/verify-email/` — verify an email token.
 - [x] `POST /api/v1/auth/resend-verification/` — resend verification.

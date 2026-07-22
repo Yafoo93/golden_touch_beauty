@@ -138,6 +138,41 @@ class LoginApiTests(TestCase):
         self.assertEqual(allowed.status_code, status.HTTP_200_OK)
 
 
+class LogoutApiTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email="logout@example.com",
+            phone_number="+233241234572",
+            full_name="Logout Customer",
+            password="SafeCustomerPass!2026",
+        )
+
+    def test_logout_invalidates_authenticated_session(self):
+        self.client.force_login(self.user, backend="accounts.backends.EmailOrPhoneBackend")
+        self.assertIn("_auth_user_id", self.client.session)
+        response = self.client.post(reverse("accounts:logout"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_logout_is_idempotent_for_anonymous_visitors(self):
+        response = self.client.post(reverse("accounts:logout"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_logout_requires_csrf_when_checks_are_enabled(self):
+        from django.test import Client
+
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.user, backend="accounts.backends.EmailOrPhoneBackend")
+        denied = client.post(reverse("accounts:logout"))
+        self.assertEqual(denied.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertIn("_auth_user_id", client.session)
+        csrf_response = client.get(reverse("accounts:csrf"))
+        token = csrf_response.cookies["csrftoken"].value
+        allowed = client.post(reverse("accounts:logout"), HTTP_X_CSRFTOKEN=token)
+        self.assertEqual(allowed.status_code, status.HTTP_200_OK)
+        self.assertNotIn("_auth_user_id", client.session)
+
+
 class PasswordResetRequestApiTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(

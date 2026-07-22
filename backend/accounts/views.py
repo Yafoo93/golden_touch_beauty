@@ -1,7 +1,7 @@
 import logging
 
 from django.conf import settings
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from django.contrib.auth.tokens import default_token_generator
 from django.core import signing
 from django.core.mail import send_mail
@@ -76,6 +76,15 @@ class LoginView(APIView):
         login(request, user, backend="accounts.backends.EmailOrPhoneBackend")
         get_token(request)
         return Response({"user": CurrentUserSerializer(user).data})
+
+
+class LogoutView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        enforce_csrf(request)
+        logout(request)
+        return Response({"detail": "You have been signed out successfully."})
 
 
 class PasswordResetRequestView(APIView):
