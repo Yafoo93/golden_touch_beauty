@@ -1,3 +1,11 @@
-from django.db import models
+from core.models import BaseModel, BranchScopedModel
 
-# Create your models here.
+
+class POSSale(BaseModel, BranchScopedModel):
+    """Branch-owned POS sale foundation; cashier and line items follow later."""
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"POS sale {self.pk} at {self.branch}"

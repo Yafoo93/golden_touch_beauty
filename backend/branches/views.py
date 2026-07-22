@@ -5,11 +5,19 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from accounts.models import User
 from inventory.models import BranchInventory
 from products.models import ProductVariant
 
 from .models import Branch
-from .serializers import PickupOptionsRequestSerializer, PublicBranchSerializer
+from .permissions import IsOwner
+from .serializers import (
+    BranchManagerOptionSerializer,
+    ManagementBranchCreateSerializer,
+    ManagementBranchSerializer,
+    PickupOptionsRequestSerializer,
+    PublicBranchSerializer,
+)
 
 
 class PublicBranchListView(generics.ListAPIView):
@@ -22,6 +30,33 @@ class PublicBranchDetailView(generics.RetrieveAPIView):
     serializer_class = PublicBranchSerializer
     permission_classes = [AllowAny]
     queryset = Branch.objects.filter(is_active=True)
+
+
+class ManagementBranchListView(generics.ListCreateAPIView):
+    permission_classes = [IsOwner]
+    queryset = Branch.objects.select_related("assigned_manager").order_by("name")
+
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return ManagementBranchCreateSerializer
+        return ManagementBranchSerializer
+
+
+class ManagementBranchDetailView(generics.RetrieveUpdateAPIView):
+    permission_classes = [IsOwner]
+    queryset = Branch.objects.select_related("assigned_manager")
+
+    def get_serializer_class(self):
+        if self.request.method in {"PUT", "PATCH"}:
+            return ManagementBranchCreateSerializer
+        return ManagementBranchSerializer
+
+
+class BranchManagerOptionListView(generics.ListAPIView):
+    serializer_class = BranchManagerOptionSerializer
+    permission_classes = [IsOwner]
+    pagination_class = None
+    queryset = User.objects.filter(is_active=True, is_staff=True).order_by("full_name")
 
 
 class PickupBranchOptionsView(APIView):

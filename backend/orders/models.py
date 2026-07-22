@@ -1,3 +1,11 @@
-from django.db import models
+from core.models import BaseModel, BranchScopedModel
 
-# Create your models here.
+
+class Order(BaseModel, BranchScopedModel):
+    """Branch-owned ecommerce order foundation; commerce fields follow later."""
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Order {self.pk} at {self.branch}"

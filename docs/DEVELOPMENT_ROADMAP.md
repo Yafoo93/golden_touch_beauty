@@ -76,12 +76,12 @@ Expand the launched multi-branch platform with staff roles and assignment, advan
 
 - [ ] Complete branch API and reusable branch permissions; the branch model, migrations, seed data, validation, and Django Admin management are in place.
 - [x] Seed Makola and Tse Addo using the currently supplied development details.
-- [ ] Add staff-to-branch membership with one or more roles and individual permission overrides.
+- [x] Add staff-to-branch membership with one or more roles and individual permission overrides.
 - [ ] Implement owner-wide access and branch-scoped access policies once, then reuse them across every domain.
 - [ ] Add branch selection to service booking and eligible pickup branch selection to checkout.
 - [ ] Enable/disable services per branch.
 - [ ] Maintain product selling prices consistently across branches while tracking inventory separately.
-- [ ] Attribute every booking, order, payment, POS sale, stock movement, expense, staff action, receipt, reversal, and audit event to a branch.
+- [ ] Attribute every booking, order, payment, POS sale, stock movement, expense, staff action, receipt, reversal, and audit event to a branch. *(Phase 1 transaction foundations now require branches for bookings, orders, stock, payments, POS sales, receipts, and persisted report snapshots; remaining Phase 2 records stay pending.)*
 - [ ] Add branch filters to admin lists, analytics, reports, and exports.
 - [ ] Prevent cross-branch object access in the API, including guessed UUIDs.
 - [ ] Test owner-wide access, multi-branch assignments, single-branch restrictions, inactive branches, and cross-branch denial.
