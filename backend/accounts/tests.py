@@ -1,10 +1,12 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
+from django.core import signing
 from django.core import mail
 from django.test import TestCase
 from django.urls import reverse
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
+from django.utils import timezone
 from rest_framework import status
 
 from customers.models import CustomerConsent
@@ -246,3 +248,97 @@ class PasswordResetConfirmApiTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.user.refresh_from_db()
         self.assertTrue(self.user.check_password("OldSafePass!2026"))
+
+
+class EmailVerificationResendApiTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email="verify@example.com",
+            phone_number="+233241234570",
+            full_name="Verification Customer",
+            password="SafeCustomerPass!2026",
+        )
+
+    def test_unverified_active_account_receives_verification_link(self):
+        response = self.client.post(
+            reverse("accounts:resend-verification"),
+            {"email": "VERIFY@example.com"},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ["verify@example.com"])
+        self.assertIn("/verify-email/", mail.outbox[0].body)
+
+    def test_unknown_and_verified_accounts_receive_same_response(self):
+        unknown = self.client.post(
+            reverse("accounts:resend-verification"),
+            {"email": "unknown@example.com"},
+            content_type="application/json",
+        )
+        self.user.email_verified_at = timezone.now()
+        self.user.save(update_fields=["email_verified_at"])
+        verified = self.client.post(
+            reverse("accounts:resend-verification"),
+            {"email": self.user.email},
+            content_type="application/json",
+        )
+        self.assertEqual(unknown.status_code, status.HTTP_200_OK)
+        self.assertEqual(unknown.json(), verified.json())
+        self.assertEqual(mail.outbox, [])
+
+
+class EmailVerificationConfirmApiTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email="verification-confirm@example.com",
+            phone_number="+233241234571",
+            full_name="Verification Confirmation Customer",
+            password="SafeCustomerPass!2026",
+        )
+
+    def token(self, **overrides):
+        payload = {"user_id": str(self.user.pk), "email": self.user.email}
+        payload.update(overrides)
+        return signing.dumps(
+            payload,
+            salt="accounts.email-verification",
+            compress=True,
+        )
+
+    def test_valid_link_verifies_account_and_is_idempotent(self):
+        payload = {"token": self.token()}
+        response = self.client.post(
+            reverse("accounts:verify-email"),
+            payload,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertIsNotNone(self.user.email_verified_at)
+        verified_at = self.user.email_verified_at
+
+        repeated = self.client.post(
+            reverse("accounts:verify-email"),
+            payload,
+            content_type="application/json",
+        )
+        self.assertEqual(repeated.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.email_verified_at, verified_at)
+
+    def test_tampered_or_wrong_account_token_is_rejected(self):
+        tampered = self.client.post(
+            reverse("accounts:verify-email"),
+            {"token": f"{self.token()}tampered"},
+            content_type="application/json",
+        )
+        wrong_email = self.client.post(
+            reverse("accounts:verify-email"),
+            {"token": self.token(email="different@example.com")},
+            content_type="application/json",
+        )
+        self.assertEqual(tampered.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(wrong_email.status_code, status.HTTP_400_BAD_REQUEST)
+        self.user.refresh_from_db()
+        self.assertIsNone(self.user.email_verified_at)

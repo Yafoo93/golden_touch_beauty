@@ -202,6 +202,10 @@ DEFAULT_FROM_EMAIL = env(
     "DEFAULT_FROM_EMAIL",
     default="Golden Touch Beauty Centre <noreply@goldentouch.local>",
 )
+EMAIL_VERIFICATION_MAX_AGE_SECONDS = env.int(
+    "EMAIL_VERIFICATION_MAX_AGE_SECONDS",
+    default=86400,
+)
 
 # JSON stdout logs work locally and with container/cloud log collectors. Values
 # such as request bodies, cookies, authorization headers, and query strings are

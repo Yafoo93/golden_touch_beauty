@@ -146,8 +146,8 @@ This is where the login and registration pages are built.
 - [x] `/login` — email or phone number plus password.
 - [x] `/forgot-password` — request a password-reset email.
 - [x] `/reset-password/[token]` — choose a new password.
-- [ ] `/verify-email` — explain that verification is required and allow resend.
-- [ ] `/verify-email/[token]` — process the verification link.
+- [x] `/verify-email` — explain that verification is required and allow resend.
+- [x] `/verify-email/[token]` — process the verification link.
 - [ ] `/logout` action — invalidate the server session and return to the home page.
 
 ### Staff login
@@ -163,8 +163,8 @@ This is where the login and registration pages are built.
 - [x] `POST /api/v1/auth/login/` — authenticate by email or phone and create a secure session.
 - [ ] `POST /api/v1/auth/logout/` — destroy the session.
 - [ ] `GET /api/v1/auth/me/` — return the currently logged-in user and permissions.
-- [ ] `POST /api/v1/auth/verify-email/` — verify an email token.
-- [ ] `POST /api/v1/auth/resend-verification/` — resend verification.
+- [x] `POST /api/v1/auth/verify-email/` — verify an email token.
+- [x] `POST /api/v1/auth/resend-verification/` — resend verification.
 - [x] `POST /api/v1/auth/password-reset/` — send reset instructions.
 - [x] `POST /api/v1/auth/password-reset/confirm/` — set the new password.
 

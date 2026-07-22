@@ -90,7 +90,15 @@ class RegistrationSerializer(serializers.Serializer):
 class CurrentUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ("id", "full_name", "email", "phone_number", "is_staff", "is_superuser")
+        fields = (
+            "id",
+            "full_name",
+            "email",
+            "phone_number",
+            "email_verified_at",
+            "is_staff",
+            "is_superuser",
+        )
         read_only_fields = fields
 
 
@@ -127,6 +135,17 @@ class PasswordResetRequestSerializer(serializers.Serializer):
 
     def validate_email(self, value):
         return User.objects.normalize_email(value).lower()
+
+
+class EmailVerificationResendSerializer(serializers.Serializer):
+    email = serializers.EmailField(max_length=254)
+
+    def validate_email(self, value):
+        return User.objects.normalize_email(value).lower()
+
+
+class EmailVerificationConfirmSerializer(serializers.Serializer):
+    token = serializers.CharField(write_only=True, trim_whitespace=True)
 
 
 class PasswordResetConfirmSerializer(serializers.Serializer):

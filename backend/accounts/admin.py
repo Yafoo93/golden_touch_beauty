@@ -12,6 +12,7 @@ class UserAdmin(BaseUserAdmin):
         "email",
         "phone_number",
         "full_name",
+        "email_verified_at",
         "is_staff",
         "is_active",
     )
@@ -33,6 +34,7 @@ class UserAdmin(BaseUserAdmin):
         "last_login",
         "created_at",
         "updated_at",
+        "email_verified_at",
     )
 
     fieldsets = (
@@ -53,6 +55,7 @@ class UserAdmin(BaseUserAdmin):
                     "full_name",
                     "date_of_birth",
                     "gender",
+                    "email_verified_at",
                 )
             },
         ),

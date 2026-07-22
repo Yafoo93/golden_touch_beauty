@@ -1428,8 +1428,12 @@ textarea.form-field__control { min-height: 7rem; }
 .auth-form__helper { margin-top: -0.35rem; text-align: right; }
 .auth-form__helper a { color: var(--gold-light); font-size: 0.84rem; text-underline-offset: 0.18rem; }
 .auth-success { text-align: center; }
+.auth-success--compact { padding: 1rem; border-color: rgba(223, 168, 36, 0.16); background: #0e0e0e; }
+.auth-success--compact .auth-success__icon { width: 2.75rem; height: 2.75rem; }
+.auth-success--compact h2 { font-size: 1.45rem; }
 .auth-success__icon { width: 3.5rem; height: 3.5rem; margin-inline: auto; display: grid; place-items: center; border-radius: 50%; background: var(--gold); color: #090909; font-size: 1.6rem; font-weight: 900; }
 .auth-success__icon--mail { font-size: 1.35rem; }
+.auth-success__icon--error { background: #9f332d; color: #fff; }
 .auth-success h2 { font-family: Georgia, "Times New Roman", serif; font-size: 2rem; }
 .auth-success p { color: #aaa59d; line-height: 1.55; }
 .auth-success .auth-success__note { color: #77726b; font-size: 0.8rem; }
