@@ -60,6 +60,9 @@ class BranchManagerOptionListView(generics.ListAPIView):
 
 
 class PickupBranchOptionsView(APIView):
+    # This is a read-only availability calculation that uses POST solely for
+    # its structured item payload. It has no user state or data mutation.
+    authentication_classes = []
     permission_classes = [AllowAny]
 
     def post(self, request):

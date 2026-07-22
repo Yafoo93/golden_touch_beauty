@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.core import signing
 from django.core import mail
@@ -8,7 +9,9 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from django.utils import timezone
 from rest_framework import status
+from urllib.parse import unquote, urlparse
 
+from branches.models import Branch, BranchStaffAssignment
 from customers.models import CustomerConsent
 
 
@@ -45,6 +48,28 @@ class RegistrationApiTests(TestCase):
         self.assertEqual(str(self.client.session.get("_auth_user_id")), str(user.pk))
         self.assertTrue(user.customer_consent.marketing_consent)
         self.assertTrue(response.cookies.get("csrftoken"))
+
+    def test_registration_requires_csrf_when_checks_are_enabled(self):
+        from django.test import Client
+
+        client = Client(enforce_csrf_checks=True)
+        denied = client.post(
+            reverse("accounts:register"),
+            self.payload(),
+            content_type="application/json",
+        )
+        self.assertEqual(denied.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertFalse(User.objects.filter(email="ama@example.com").exists())
+
+        csrf_response = client.get(reverse("accounts:csrf"))
+        token = csrf_response.cookies["csrftoken"].value
+        allowed = client.post(
+            reverse("accounts:register"),
+            self.payload(),
+            content_type="application/json",
+            HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(allowed.status_code, status.HTTP_201_CREATED)
 
     def test_terms_and_privacy_agreement_is_required(self):
         response = self.client.post(
@@ -89,6 +114,10 @@ class LoginApiTests(TestCase):
         )
 
     def test_login_with_email_creates_session_and_csrf_cookie(self):
+        anonymous_session = self.client.session
+        anonymous_session["pre_login_marker"] = True
+        anonymous_session.save()
+        anonymous_session_key = anonymous_session.session_key
         response = self.client.post(
             reverse("accounts:login"),
             {"identifier": "CUSTOMER@example.com", "password": "SafeCustomerPass!2026"},
@@ -98,6 +127,11 @@ class LoginApiTests(TestCase):
         self.assertEqual(response.json()["user"]["email"], "customer@example.com")
         self.assertEqual(str(self.client.session.get("_auth_user_id")), str(self.user.pk))
         self.assertTrue(response.cookies.get("csrftoken"))
+        session_cookie = response.cookies[settings.SESSION_COOKIE_NAME]
+        self.assertTrue(session_cookie["httponly"])
+        self.assertEqual(session_cookie["samesite"], "Lax")
+        self.assertEqual(session_cookie["path"], "/")
+        self.assertNotEqual(self.client.session.session_key, anonymous_session_key)
 
     def test_login_with_local_ghana_phone_number(self):
         response = self.client.post(
@@ -115,6 +149,65 @@ class LoginApiTests(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("incorrect", str(response.json()).lower())
+
+    def test_customer_receives_account_destination(self):
+        response = self.client.post(
+            reverse("accounts:login"),
+            {"identifier": self.user.email, "password": "SafeCustomerPass!2026"},
+            content_type="application/json",
+        )
+        self.assertEqual(response.json()["user"]["post_login_path"], "/account")
+        self.assertEqual(response.json()["user"]["portal_access"], [])
+
+    def test_staff_destination_uses_active_branch_roles(self):
+        branch = Branch.objects.create(
+            name="Login Routing Branch",
+            code="LOGIN_ROUTE",
+            address="Accra",
+            telephone_number="+233200000099",
+            opening_days=["Monday"],
+            opening_time="07:30",
+            closing_time="19:00",
+        )
+        cashier = User.objects.create_user(
+            email="routing-cashier@example.com",
+            phone_number="+233241234573",
+            full_name="Routing Cashier",
+            password="SafeCustomerPass!2026",
+            is_staff=True,
+        )
+        manager = User.objects.create_user(
+            email="routing-manager@example.com",
+            phone_number="+233241234574",
+            full_name="Routing Manager",
+            password="SafeCustomerPass!2026",
+            is_staff=True,
+        )
+        BranchStaffAssignment.objects.create(
+            branch=branch,
+            staff=cashier,
+            roles=[BranchStaffAssignment.Role.CASHIER],
+        )
+        BranchStaffAssignment.objects.create(
+            branch=branch,
+            staff=manager,
+            roles=[BranchStaffAssignment.Role.MANAGER],
+        )
+
+        cashier_response = self.client.post(
+            reverse("accounts:login"),
+            {"identifier": cashier.email, "password": "SafeCustomerPass!2026"},
+            content_type="application/json",
+        )
+        manager_response = self.client.post(
+            reverse("accounts:login"),
+            {"identifier": manager.email, "password": "SafeCustomerPass!2026"},
+            content_type="application/json",
+        )
+        self.assertEqual(cashier_response.json()["user"]["post_login_path"], "/pos")
+        self.assertEqual(cashier_response.json()["user"]["portal_access"], ["pos"])
+        self.assertEqual(manager_response.json()["user"]["post_login_path"], "/management")
+        self.assertEqual(manager_response.json()["user"]["portal_access"], ["management", "pos"])
 
     def test_csrf_is_required_when_checks_are_enabled(self):
         from django.test import Client
@@ -153,6 +246,7 @@ class LogoutApiTests(TestCase):
         response = self.client.post(reverse("accounts:logout"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertNotIn("_auth_user_id", self.client.session)
+        self.assertEqual(response.cookies[settings.SESSION_COOKIE_NAME].value, "")
 
     def test_logout_is_idempotent_for_anonymous_visitors(self):
         response = self.client.post(reverse("accounts:logout"))
@@ -304,6 +398,16 @@ class EmailVerificationResendApiTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, ["verify@example.com"])
         self.assertIn("/verify-email/", mail.outbox[0].body)
+        verification_url = next(
+            line for line in mail.outbox[0].body.splitlines() if "/verify-email/" in line
+        )
+        encoded_token = urlparse(verification_url).path.rsplit("/", 1)[-1]
+        self.assertNotIn(":", encoded_token)
+        payload = signing.loads(
+            unquote(encoded_token),
+            salt="accounts.email-verification",
+        )
+        self.assertEqual(payload["user_id"], str(self.user.pk))
 
     def test_unknown_and_verified_accounts_receive_same_response(self):
         unknown = self.client.post(

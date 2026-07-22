@@ -13,6 +13,8 @@ type SignedInUser = {
   phone_number: string;
   is_staff: boolean;
   is_superuser: boolean;
+  portal_access: Array<"management" | "pos">;
+  post_login_path: string | null;
 };
 
 export function LoginForm() {
@@ -36,6 +38,10 @@ export function LoginForm() {
           password: String(data.get("password") ?? ""),
         }),
       });
+      if (response.user.post_login_path) {
+        window.location.replace(response.user.post_login_path);
+        return;
+      }
       setUser(response.user);
     } catch (caught) {
       setErrors([caught instanceof ApiError ? caught.message : "Sign in could not be completed. Please try again."]);
@@ -48,8 +54,7 @@ export function LoginForm() {
       <section className="auth-success" role="status">
         <span className="auth-success__icon" aria-hidden="true">✓</span>
         <h2>Welcome back, {user.full_name}</h2>
-        <p>You are signed in securely.</p>
-        {user.is_superuser ? <ButtonLink href="/management/branches" fullWidth>Open management</ButtonLink> : <ButtonLink href="/book" fullWidth>Book an appointment</ButtonLink>}
+        <p>Your staff account is signed in, but it does not currently have an active branch assignment or portal permission. Ask the owner to review your access.</p>
         <ButtonLink href="/" variant="outline" fullWidth>Return home</ButtonLink>
         <ButtonLink href="/logout" variant="black" fullWidth>Sign out</ButtonLink>
       </section>

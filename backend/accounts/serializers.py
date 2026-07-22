@@ -9,6 +9,7 @@ from django.utils import timezone
 from rest_framework import serializers
 
 from customers.models import CustomerConsent
+from branches.permissions import get_staff_portal_access
 
 
 User = get_user_model()
@@ -88,6 +89,22 @@ class RegistrationSerializer(serializers.Serializer):
 
 
 class CurrentUserSerializer(serializers.ModelSerializer):
+    portal_access = serializers.SerializerMethodField()
+    post_login_path = serializers.SerializerMethodField()
+
+    def get_portal_access(self, obj):
+        return get_staff_portal_access(obj)
+
+    def get_post_login_path(self, obj):
+        if not obj.is_staff and not obj.is_superuser:
+            return "/account"
+        access = get_staff_portal_access(obj)
+        if "management" in access:
+            return "/management"
+        if "pos" in access:
+            return "/pos"
+        return None
+
     class Meta:
         model = User
         fields = (
@@ -96,6 +113,8 @@ class CurrentUserSerializer(serializers.ModelSerializer):
             "email",
             "phone_number",
             "email_verified_at",
+            "portal_access",
+            "post_login_path",
             "is_staff",
             "is_superuser",
         )

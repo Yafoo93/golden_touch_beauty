@@ -145,6 +145,33 @@ class ClientErrorReportingTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.json()["error"]["code"], "validation_error")
 
+    def test_anonymous_unsafe_api_request_requires_csrf(self):
+        from django.test import Client
+
+        client = Client(enforce_csrf_checks=True)
+        payload = {
+            "name": "RenderError",
+            "message": "CSRF boundary test",
+            "path": "/services",
+        }
+        denied = client.post(
+            reverse("core:client-error-report"),
+            payload,
+            content_type="application/json",
+        )
+        self.assertEqual(denied.status_code, status.HTTP_403_FORBIDDEN)
+
+        csrf_response = client.get(reverse("accounts:csrf"))
+        token = csrf_response.cookies["csrftoken"].value
+        with self.assertLogs("golden_touch.health", level="ERROR"):
+            allowed = client.post(
+                reverse("core:client-error-report"),
+                payload,
+                content_type="application/json",
+                HTTP_X_CSRFTOKEN=token,
+            )
+        self.assertEqual(allowed.status_code, status.HTTP_202_ACCEPTED)
+
 
 class JsonLoggingTests(TestCase):
     def test_formatter_outputs_machine_readable_context(self):

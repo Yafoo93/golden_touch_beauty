@@ -153,8 +153,8 @@ This is where the login and registration pages are built.
 ### Staff login
 
 - [x] Staff use the same `/login` page.
-- [ ] After login, customers go to `/account`.
-- [ ] Authorized staff go to `/management` or `/pos` based on their permissions.
+- [x] After login, customers go to `/account`.
+- [x] Authorized staff go to `/management` or `/pos` based on their active branch roles and permission overrides.
 
 ### Backend APIs
 
@@ -170,9 +170,9 @@ This is where the login and registration pages are built.
 
 ### Security behavior
 
-- [ ] Use Django sessions in secure HTTP-only cookies.
-- [ ] Do not save tokens in `localStorage` or `sessionStorage`.
-- [ ] Require CSRF tokens for login, registration, logout, and all data-changing requests.
+- [x] Use database-backed Django sessions with HTTP-only, SameSite cookies and Secure transport enforcement in production.
+- [x] Do not save authentication, session, CSRF, reset, or verification tokens in `localStorage` or `sessionStorage`; enforce this with a frontend security check.
+- [x] Require CSRF cookie/header validation centrally for login, registration, logout, and all unsafe browser API requests.
 - [ ] Normalize phone numbers to international format.
 - [ ] Rate-limit repeated login, registration, verification, and reset attempts.
 - [x] Prevent users from discovering whether an email exists through password-reset responses.

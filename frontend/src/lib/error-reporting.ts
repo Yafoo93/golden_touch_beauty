@@ -1,3 +1,5 @@
+import { apiFetch, ensureCsrfCookie } from "@/lib/api";
+
 export type ReportableError = Error & { digest?: string };
 
 export async function reportClientError(error: ReportableError): Promise<void> {
@@ -9,9 +11,9 @@ export async function reportClientError(error: ReportableError): Promise<void> {
   };
 
   try {
-    await fetch("/backend-api/v1/client-errors/", {
+    await ensureCsrfCookie();
+    await apiFetch("client-errors/", {
       method: "POST",
-      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
       keepalive: true,

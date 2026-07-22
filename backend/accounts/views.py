@@ -1,4 +1,5 @@
 import logging
+from urllib.parse import quote, unquote
 
 from django.conf import settings
 from django.contrib.auth import login, logout
@@ -173,7 +174,10 @@ class EmailVerificationResendView(APIView):
                 salt="accounts.email-verification",
                 compress=True,
             )
-            verification_url = f"{settings.FRONTEND_URL.rstrip('/')}/verify-email/{token}"
+            verification_url = (
+                f"{settings.FRONTEND_URL.rstrip('/')}/verify-email/"
+                f"{quote(token, safe='')}"
+            )
             try:
                 send_mail(
                     subject="Verify your Golden Touch email address",
@@ -205,7 +209,7 @@ class EmailVerificationConfirmView(APIView):
         serializer.is_valid(raise_exception=True)
         try:
             payload = signing.loads(
-                serializer.validated_data["token"],
+                unquote(serializer.validated_data["token"]),
                 salt="accounts.email-verification",
                 max_age=settings.EMAIL_VERIFICATION_MAX_AGE_SECONDS,
             )

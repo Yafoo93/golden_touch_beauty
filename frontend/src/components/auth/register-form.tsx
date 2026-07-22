@@ -5,15 +5,14 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { FormField, ValidationMessage, ValidationSummary } from "@/components/ui/form-field";
 import { ApiError, apiFetch, ensureCsrfCookie } from "@/lib/api";
+import {
+  clearRegistrationDraft,
+  readRegistrationDraft,
+  writeRegistrationDraft,
+  type RegistrationDraft,
+} from "@/lib/registration-draft-storage";
 
 type RegisteredUser = { id: string; full_name: string; email: string; phone_number: string };
-type RegistrationDraft = {
-  full_name: string;
-  email: string;
-  phone_number: string;
-  terms_privacy_agreed: boolean;
-  marketing_consent: boolean;
-};
 
 const EMPTY_DRAFT: RegistrationDraft = {
   full_name: "",
@@ -22,7 +21,6 @@ const EMPTY_DRAFT: RegistrationDraft = {
   terms_privacy_agreed: false,
   marketing_consent: false,
 };
-const DRAFT_KEY = "golden-touch-registration-draft";
 
 function apiValidation(error: ApiError) {
   if (!error.details || typeof error.details !== "object") return { summary: [error.message], fields: {} };
@@ -44,8 +42,7 @@ export function RegisterForm() {
   useEffect(() => {
     let restoredDraft = EMPTY_DRAFT;
     try {
-      const saved = sessionStorage.getItem(DRAFT_KEY);
-      if (saved) restoredDraft = { ...EMPTY_DRAFT, ...JSON.parse(saved) };
+      restoredDraft = { ...EMPTY_DRAFT, ...readRegistrationDraft() };
     } catch {
       // Registration remains usable when browser storage is unavailable.
     }
@@ -59,7 +56,7 @@ export function RegisterForm() {
   useEffect(() => {
     if (!draftLoaded) return;
     try {
-      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+      writeRegistrationDraft(draft);
     } catch {
       // Draft persistence is a convenience, not a registration requirement.
     }
@@ -101,7 +98,7 @@ export function RegisterForm() {
         }),
       });
       try {
-        sessionStorage.removeItem(DRAFT_KEY);
+        clearRegistrationDraft();
       } catch {
         // The account was created even if browser storage cannot be cleared.
       }

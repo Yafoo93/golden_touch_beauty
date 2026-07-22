@@ -148,6 +148,10 @@ CSRF_TRUSTED_ORIGINS = env.list(
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SECURE = env.bool("DJANGO_SESSION_COOKIE_SECURE")
 SESSION_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_PATH = "/"
+SESSION_COOKIE_DOMAIN = None
+SESSION_ENGINE = "django.contrib.sessions.backends.db"
+SESSION_SAVE_EVERY_REQUEST = False
 CSRF_COOKIE_SECURE = env.bool("DJANGO_CSRF_COOKIE_SECURE")
 CSRF_COOKIE_SAMESITE = "Lax"
 
@@ -158,7 +162,7 @@ X_FRAME_OPTIONS = "DENY"
 REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "core.exceptions.api_exception_handler",
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.SessionAuthentication",
+        "accounts.authentication.CsrfProtectedSessionAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",

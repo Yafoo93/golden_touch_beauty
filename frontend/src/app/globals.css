@@ -1448,3 +1448,24 @@ textarea.form-field__control { min-height: 7rem; }
 .policy-page h2 { font-family: Georgia, "Times New Roman", serif; font-size: 1.7rem; }
 .policy-page section p { margin-top: 0.8rem; color: #aaa59d; line-height: 1.7; }
 @media (max-width: 36rem) { .auth-form__passwords { grid-template-columns: 1fr; } }
+
+.account-landing { width: min(calc(100% - 2rem), 72rem); min-height: 70vh; margin-inline: auto; padding-block: clamp(2.5rem, 7vw, 5rem); }
+.account-landing__header { margin-bottom: 2rem; }
+.account-landing__header > p, .account-landing__panel > div > p { color: var(--gold); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; }
+.account-landing__header h1 { margin-top: 0.45rem; font-family: Georgia, "Times New Roman", serif; font-size: clamp(2.75rem, 7vw, 4.75rem); }
+.account-landing__header > span { display: block; margin-top: 0.55rem; color: #969189; }
+.account-landing__panel { padding: clamp(1.5rem, 5vw, 3rem); display: flex; align-items: center; justify-content: space-between; gap: 2rem; border: 1px solid rgba(223, 168, 36, 0.24); border-radius: 0.65rem; background: #131313; }
+.account-landing__panel h2 { margin-top: 0.5rem; font-family: Georgia, "Times New Roman", serif; font-size: clamp(1.75rem, 4vw, 2.5rem); }
+.account-landing__panel span { max-width: 42rem; margin-top: 0.7rem; display: block; color: #aaa59d; line-height: 1.6; }
+.account-landing__actions { min-width: 13rem; display: grid; gap: 0.75rem; }
+@media (max-width: 46rem) { .account-landing__panel { align-items: stretch; flex-direction: column; } .account-landing__actions { min-width: 0; } .account-landing__actions .button { width: 100%; } }
+
+.portal-landing { width: min(calc(100% - 2rem), 72rem); min-height: 70vh; margin-inline: auto; padding-block: clamp(2.5rem, 7vw, 5rem); }
+.portal-landing > header { margin-bottom: 2rem; }
+.portal-landing > header > p { color: var(--gold); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; }
+.portal-landing > header h1 { margin-top: 0.45rem; font-family: Georgia, "Times New Roman", serif; font-size: clamp(2.75rem, 7vw, 4.75rem); }
+.portal-landing > header span, .portal-landing__panel p { display: block; margin-top: 0.65rem; color: #aaa59d; line-height: 1.6; }
+.portal-landing__panel { padding: clamp(1.5rem, 5vw, 3rem); border: 1px solid rgba(223, 168, 36, 0.24); border-radius: 0.65rem; background: #131313; }
+.portal-landing__panel h2 { font-family: Georgia, "Times New Roman", serif; font-size: clamp(1.75rem, 4vw, 2.5rem); }
+.portal-landing__panel > div { margin-top: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.75rem; }
+@media (max-width: 36rem) { .portal-landing__panel > div { display: grid; } .portal-landing__panel .button { width: 100%; } }

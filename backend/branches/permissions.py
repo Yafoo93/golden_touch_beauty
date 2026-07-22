@@ -5,6 +5,18 @@ from rest_framework.permissions import BasePermission
 from .models import Branch, BranchStaffAssignment
 
 
+MANAGEMENT_PORTAL_ROLES = {
+    BranchStaffAssignment.Role.MANAGER,
+    BranchStaffAssignment.Role.RECEPTIONIST,
+    BranchStaffAssignment.Role.STOCK_MANAGER,
+    BranchStaffAssignment.Role.SERVICE_PROVIDER,
+}
+POS_PORTAL_ROLES = {
+    BranchStaffAssignment.Role.CASHIER,
+    BranchStaffAssignment.Role.MANAGER,
+}
+
+
 def is_owner(user) -> bool:
     """Owners have global branch access, including inactive branches."""
     return bool(user and user.is_authenticated and user.is_active and user.is_superuser)
@@ -43,6 +55,39 @@ def can_access_branch(user, branch_or_id, required_roles: Iterable[str] | None =
         return True
     branch_id = getattr(branch_or_id, "pk", branch_or_id)
     return branch_id in get_accessible_branch_ids(user, required_roles)
+
+
+def get_staff_portal_access(user) -> list[str]:
+    """Return portals authorized by active branch roles and explicit overrides."""
+    if not user or not user.is_authenticated or not user.is_active:
+        return []
+    if is_owner(user):
+        return ["management", "pos"]
+    if not user.is_staff:
+        return []
+
+    access = set()
+    assignments = BranchStaffAssignment.objects.filter(
+        staff=user,
+        is_active=True,
+        branch__is_active=True,
+    ).values_list("roles", "permission_overrides")
+    for roles, overrides in assignments:
+        normalized_roles = _normalized_roles(roles)
+        normalized_overrides = overrides if isinstance(overrides, dict) else {}
+        if normalized_overrides.get("can_access_branch") is False:
+            continue
+        if normalized_overrides.get("can_access_management") is True or (
+            normalized_overrides.get("can_access_management") is not False
+            and MANAGEMENT_PORTAL_ROLES.intersection(normalized_roles)
+        ):
+            access.add("management")
+        if normalized_overrides.get("can_access_pos") is True or (
+            normalized_overrides.get("can_access_pos") is not False
+            and POS_PORTAL_ROLES.intersection(normalized_roles)
+        ):
+            access.add("pos")
+    return [portal for portal in ("management", "pos") if portal in access]
 
 
 def filter_queryset_by_branch_access(
