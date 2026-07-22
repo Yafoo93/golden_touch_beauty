@@ -117,18 +117,18 @@ Branching is part of Phase 1 and must exist before bookings, stock, sales, and r
 
 ### Management pages
 
-- [ ] `/management/branches` — list branches.
-- [ ] `/management/branches/new` — create a branch.
-- [ ] `/management/branches/[id]` — view and edit branch contacts, map, hours, manager, and active status.
+- [x] `/management/branches` — list branches through an owner-only API, including active state, contacts, hours, and assigned manager.
+- [x] `/management/branches/new` — create a branch.
+- [x] `/management/branches/[id]` — view and edit branch contacts, map, hours, manager, and active status.
 
 ### Backend work
 
 - [x] Create the initial `Branch` database model.
 - [x] Create public read-only active branch list/detail APIs with internal fields excluded.
-- [ ] Create owner-only branch create/update APIs.
-- [ ] Create staff-to-branch assignment records.
-- [ ] Create reusable permissions that restrict staff to assigned branches.
-- [ ] Require branch attribution on bookings, orders, stock, payments, POS sales, receipts, and reports.
+- [x] Create owner-only branch create/update APIs.
+- [x] Create staff-to-branch assignment records.
+- [x] Create reusable permissions that restrict staff to assigned branches.
+- [x] Require branch attribution on bookings, orders, stock, payments, POS sales, receipts, and reports.
 
 ### Result
 
@@ -142,31 +142,31 @@ This is where the login and registration pages are built.
 
 ### Customer-facing pages
 
-- [ ] `/register` — full name, email, phone number, password, confirm password, terms/privacy agreement, and optional marketing consent.
-- [ ] `/login` — email or phone number plus password.
-- [ ] `/forgot-password` — request a password-reset email.
-- [ ] `/reset-password/[token]` — choose a new password.
+- [x] `/register` — full name, email, phone number, password, confirm password, terms/privacy agreement, and optional marketing consent.
+- [x] `/login` — email or phone number plus password.
+- [x] `/forgot-password` — request a password-reset email.
+- [x] `/reset-password/[token]` — choose a new password.
 - [ ] `/verify-email` — explain that verification is required and allow resend.
 - [ ] `/verify-email/[token]` — process the verification link.
 - [ ] `/logout` action — invalidate the server session and return to the home page.
 
 ### Staff login
 
-- [ ] Staff use the same `/login` page.
+- [x] Staff use the same `/login` page.
 - [ ] After login, customers go to `/account`.
 - [ ] Authorized staff go to `/management` or `/pos` based on their permissions.
 
 ### Backend APIs
 
-- [ ] `GET /api/v1/auth/csrf/` — set/read the CSRF token required for secure form submission.
-- [ ] `POST /api/v1/auth/register/` — create a customer account.
-- [ ] `POST /api/v1/auth/login/` — authenticate by email or phone and create a secure session.
+- [x] `GET /api/v1/auth/csrf/` — set/read the CSRF token required for secure form submission.
+- [x] `POST /api/v1/auth/register/` — create a customer account.
+- [x] `POST /api/v1/auth/login/` — authenticate by email or phone and create a secure session.
 - [ ] `POST /api/v1/auth/logout/` — destroy the session.
 - [ ] `GET /api/v1/auth/me/` — return the currently logged-in user and permissions.
 - [ ] `POST /api/v1/auth/verify-email/` — verify an email token.
 - [ ] `POST /api/v1/auth/resend-verification/` — resend verification.
-- [ ] `POST /api/v1/auth/password-reset/` — send reset instructions.
-- [ ] `POST /api/v1/auth/password-reset/confirm/` — set the new password.
+- [x] `POST /api/v1/auth/password-reset/` — send reset instructions.
+- [x] `POST /api/v1/auth/password-reset/confirm/` — set the new password.
 
 ### Security behavior
 
@@ -175,7 +175,7 @@ This is where the login and registration pages are built.
 - [ ] Require CSRF tokens for login, registration, logout, and all data-changing requests.
 - [ ] Normalize phone numbers to international format.
 - [ ] Rate-limit repeated login, registration, verification, and reset attempts.
-- [ ] Prevent users from discovering whether an email exists through password-reset responses.
+- [x] Prevent users from discovering whether an email exists through password-reset responses.
 - [ ] Record important authentication events in the audit log.
 
 ### Tests
