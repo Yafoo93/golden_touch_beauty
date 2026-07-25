@@ -173,22 +173,22 @@ This is where the login and registration pages are built.
 - [x] Use database-backed Django sessions with HTTP-only, SameSite cookies and Secure transport enforcement in production.
 - [x] Do not save authentication, session, CSRF, reset, or verification tokens in `localStorage` or `sessionStorage`; enforce this with a frontend security check.
 - [x] Require CSRF cookie/header validation centrally for login, registration, logout, and all unsafe browser API requests.
-- [ ] Normalize phone numbers to international format.
-- [ ] Rate-limit repeated login, registration, verification, and reset attempts.
+- [x] Normalize phone numbers to international format.
+- [x] Rate-limit repeated login, registration, verification, and reset attempts.
 - [x] Prevent users from discovering whether an email exists through password-reset responses.
-- [ ] Record important authentication events in the audit log.
+- [x] Record important authentication events in the audit log.
 
 ### Tests
 
-- [ ] Register successfully with valid information.
-- [ ] Reject duplicate email or phone number.
-- [ ] Reject weak or mismatched passwords.
-- [ ] Log in using email.
-- [ ] Log in using phone number.
-- [ ] Reject invalid credentials.
-- [ ] Reset a forgotten password.
-- [ ] Prevent an inactive account from logging in.
-- [ ] Confirm customers cannot open management pages.
+- [x] Register successfully with valid information.
+- [x] Reject duplicate email or phone number.
+- [x] Reject weak or mismatched passwords.
+- [x] Log in using email.
+- [x] Log in using phone number.
+- [x] Reject invalid credentials.
+- [x] Reset a forgotten password.
+- [x] Prevent an inactive account from logging in.
+- [x] Confirm customers cannot open management pages.
 
 ### Result
 
@@ -200,35 +200,35 @@ A new customer can register, verify the account, log in with email or phone, log
 
 ### Public pages
 
-- [ ] `/` — home page.
-- [ ] `/about` — company story and values.
-- [ ] `/contact` — both branches, maps, contacts, hours, and WhatsApp buttons.
-- [ ] `/gallery` — approved beauty-work images.
-- [ ] `/bridal-packages` — approved bridal packages.
-- [ ] `/testimonials` — approved testimonials only.
-- [ ] `/blog` — beauty tips list.
-- [ ] `/blog/[slug]` — individual beauty article.
-- [ ] `/faq` — frequently asked questions.
-- [ ] `/terms` — terms and conditions.
-- [ ] `/privacy` — privacy policy.
-- [ ] `/cancellation-refunds` — booking cancellation and refund policy.
-- [ ] `/delivery-returns` — product delivery and return policy.
+- [x] `/` — home page.
+- [x] `/about` — company story and values.
+- [x] `/contact` — both branches, maps, contacts, hours, and WhatsApp buttons.
+- [x] `/gallery` — approved beauty-work images.
+- [x] `/bridal-packages` — placeholder package structure complete; replace with approved packages before launch.
+- [x] `/testimonials` — development samples and future video-transcript structure complete; replace with approved testimony before launch.
+- [x] `/blog` — beauty tips list.
+- [x] `/blog/[slug]` — individual beauty article.
+  [x] `/faq` — frequently asked questions.
+- [x] `/terms` — development-draft terms and conditions; replace with legal-approved copy before launch.
+- [x] `/privacy` — development-draft privacy policy; replace with legal-approved copy before launch.
+- [x] `/cancellation-refunds` — development-draft booking cancellation and refund policy; finalize operational rules and legal copy before launch.
+- [x] `/delivery-returns` — development-draft product delivery and return policy; finalize operational rules and legal copy before launch.
 
 ### Home-page sections
 
-- [ ] Hero using an approved image from `frontend/public/images`.
-- [ ] Featured services loaded from the backend.
-- [ ] Featured products loaded from the backend.
-- [ ] Verified business statistics, or hide the section until verified.
-- [ ] Golden Touch difference/benefits.
-- [ ] Approved testimonials, or hide the section until supplied.
-- [ ] Book Appointment and Shop Products calls to action.
+- [x] Hero using an approved image from `frontend/public/images`.
+- [x] Featured services loaded from the backend.
+- [x] Featured products loaded from the backend.
+- [x] Verified business statistics, or hide the section until verified.
+- [x] Golden Touch difference/benefits.
+- [x] Approved testimonials, or hide the section until supplied.
+- [x] Book Appointment and Shop Products calls to action.
 
 ### Management pages
 
-- [ ] `/management/content` — edit approved operational website content.
-- [ ] `/management/gallery` — manage gallery items.
-- [ ] `/management/testimonials` — approve/hide testimonials.
+- [x] `/management/content` — edit approved operational website content.
+- [x] `/management/gallery` — manage gallery items.
+- [x] `/management/testimonials` — approve/hide testimonials.
 
 ### Result
 
@@ -240,25 +240,25 @@ A visitor can understand the business, see accurate Ghana branch information, an
 
 ### Public pages
 
-- [ ] `/services` — published services with category filters and search.
-- [ ] `/services/[slug]` — service description, image, price/pricing note, duration, available branches, and Book This Service action.
+- [x] `/services` — published services with category filters and search.
+- [x] `/services/[slug]` — service description, image, price/pricing note, duration, available branches, and Book This Service action.
 
 ### Management pages
 
-- [ ] `/management/services` — list services and publication state.
-- [ ] `/management/services/new` — create a service.
-- [ ] `/management/services/[id]` — edit service details, pricing, duration, images, branch availability, and booking eligibility.
-- [ ] `/management/service-categories` — manage service categories.
+- [x] `/management/services` — list services and publication state.
+- [x] `/management/services/new` — create a service.
+- [x] `/management/services/[id]` — edit service details, pricing, duration, images, branch availability, and booking eligibility.
+- [x] `/management/service-categories` — manage service categories.
 
 ### Database/backend work
 
 - [x] Create the initial `ServiceCategory` model and seed categories.
 - [x] Create the initial `Service` model and seed services.
-- [ ] Create service price options for fixed, starting, range, option-based, or quoted prices.
+- [x] Create service price options for fixed, starting, range, option-based, or quoted prices.
 - [x] Create and seed service-to-branch availability for Makola and Tse Addo.
-- [ ] Add draft, published, and inactive states.
-- [ ] Add public service list/detail APIs.
-- [ ] Add authorized management create/update APIs.
+- [x] Add draft, published, and inactive states.
+- [x] Add public service list/detail APIs.
+- [x] Add authorized management create/update APIs.
 
 ### Result
 
@@ -270,27 +270,27 @@ Administrators can publish real services without changing code. Visitors can fil
 
 ### Public pages
 
-- [ ] `/shop` — search, category filters, availability, and product cards.
-- [ ] `/shop/[slug]` — product images, description, variants, price, availability, quantity, favorite, and Add to Cart.
-- [ ] `/wishlist` — authenticated customer’s saved products.
+- [x] `/shop` — search, category filters, availability, and product cards.
+- [x] `/shop/[slug]` — product images, description, variants, price, availability, quantity, favorite, and Add to Cart.
+- [x] `/wishlist` — authenticated customer’s saved products with a synchronized global star-count badge.
 
 ### Management pages
 
-- [ ] `/management/products` — list products and stock summary.
-- [ ] `/management/products/new` — create a product.
-- [ ] `/management/products/[id]` — edit product, variants, SKU, prices, images, branches, and publication state.
-- [ ] `/management/product-categories` — manage product categories.
-- [ ] `/management/inventory` — view stock by branch.
-- [ ] `/management/inventory/[variant-id]` — view stock movement history.
+- [x] `/management/products` — list products and stock summary.
+- [x] `/management/products/new` — create a product.
+- [x] `/management/products/[id]` — edit product, variants, SKU, prices, images, branches, and publication state.
+- [x] `/management/product-categories` — manage product categories.
+- [x] `/management/inventory` — view stock by branch.
+- [x] `/management/inventory/[variant-id]` — view stock movement history.
 
 ### Database/backend work
 
 - [x] Create and seed initial product category, product, variant, and image-path records.
 - [x] Create and seed separate Makola and Tse Addo inventory balances.
-- [ ] Create append-only stock movements.
-- [ ] Add public product list/detail APIs.
-- [ ] Add management product and stock APIs.
-- [ ] Prevent stock from becoming negative.
+- [x] Create append-only stock movements.
+- [x] Add public product list/detail APIs.
+- [x] Add management product and stock APIs.
+- [x] Prevent stock from becoming negative.
 
 ### Result
 
@@ -302,24 +302,22 @@ Administrators can publish products and maintain separate Makola and Tse Addo st
 
 ### Customer pages
 
-- [ ] `/cart` — items, variant, quantity, unit price, subtotal, remove, and Continue to Checkout.
-- [ ] Cart drawer/preview opened from the header icon.
+- [x] `/cart` — items, variant, quantity, unit price, subtotal, remove, and Continue to Checkout.
+- [x] Cart drawer/preview opened from the header icon.
 
 ### Behavior
 
-- [ ] Visitors can add products before logging in.
-- [ ] The guest cart survives page refresh.
-- [ ] The guest cart merges into the customer cart after login.
-- [ ] Prices and stock are checked again whenever the cart changes.
-- [ ] Customers cannot add more than available stock.
+- [x] Cart access requires customer login; guest cart actions route to `/login`.
+- [x] Customer cart contents are stored on the server and survive page refresh.
+- [x] Prices and stock are checked again whenever the cart changes.
+- [x] Customers cannot add more than available stock.
 
 ### Backend APIs
 
-- [ ] Get current cart.
-- [ ] Add cart item.
-- [ ] Change quantity.
-- [ ] Remove item.
-- [ ] Merge guest and customer carts.
+- [x] Get current cart.
+- [x] Add cart item.
+- [x] Change quantity.
+- [x] Remove item.
 
 ### Result
 

@@ -3,11 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { useCartCount } from "@/components/cart/cart-count-context";
 import { CartItemCount } from "@/components/cart/cart-item-count";
+import { CartDrawer } from "@/components/cart/cart-drawer";
 import { ButtonLink } from "@/components/ui/button";
+import { useWishlist } from "@/components/wishlist/wishlist-context";
 
 const navigation = [
   { href: "/", label: "Home" },
@@ -29,6 +31,14 @@ function CartIcon() {
   );
 }
 
+function WishlistIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m12 2.8 2.8 5.7 6.3.9-4.55 4.43 1.07 6.27L12 17.14 6.38 20.1l1.07-6.27L2.9 9.4l6.3-.9L12 2.8Z" />
+    </svg>
+  );
+}
+
 function AccountIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -41,7 +51,14 @@ function AccountIcon() {
 export function SiteHeader() {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const closeCart = useCallback(() => setIsCartOpen(false), []);
   const { itemCount: cartItemCount } = useCartCount();
+  const {
+    itemCount: wishlistItemCount,
+    authenticated,
+    loading: authenticationLoading,
+  } = useWishlist();
 
   useEffect(() => {
     if (!isMenuOpen) return;
@@ -54,9 +71,11 @@ export function SiteHeader() {
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [isMenuOpen]);
 
-  // Authentication is implemented in Stage 4. Until then this control points
-  // to Login; it will become Account when the session endpoint is connected.
-  const isAuthenticated = false;
+  useEffect(() => {
+    setIsCartOpen(false);
+  }, [pathname]);
+
+  const isAuthenticated = authenticated === true;
   const accountHref = isAuthenticated ? "/account" : "/login";
   const accountLabel = isAuthenticated ? "Account" : "Login";
 
@@ -109,13 +128,38 @@ export function SiteHeader() {
 
         <div className="header-actions">
           <Link
+            className="wishlist-link"
+            href={
+              isAuthenticated
+                ? "/wishlist"
+                : `/login?next=${encodeURIComponent("/wishlist")}`
+            }
+            aria-label={`Wishlist, ${wishlistItemCount} ${wishlistItemCount === 1 ? "item" : "items"}`}
+          >
+            <WishlistIcon />
+            <CartItemCount count={wishlistItemCount} className="wishlist-link__count" />
+          </Link>
+          <button
             className="cart-link"
-            href="/cart"
+            type="button"
             aria-label={`Cart, ${cartItemCount} ${cartItemCount === 1 ? "item" : "items"}`}
+            aria-haspopup="dialog"
+            aria-expanded={isCartOpen}
+            onClick={() => {
+              setIsMenuOpen(false);
+              if (authenticationLoading) return;
+              if (!isAuthenticated) {
+                window.location.assign(
+                  `/login?next=${encodeURIComponent("/shop")}`,
+                );
+                return;
+              }
+              setIsCartOpen(true);
+            }}
           >
             <CartIcon />
             <CartItemCount count={cartItemCount} />
-          </Link>
+          </button>
           <Link className="account-link" href={accountHref}>
             <AccountIcon />
             <span>{accountLabel}</span>
@@ -161,7 +205,25 @@ export function SiteHeader() {
             })}
             <Link
               className="mobile-nav__link"
-              href="/cart"
+              href={
+                isAuthenticated
+                  ? "/wishlist"
+                  : `/login?next=${encodeURIComponent("/wishlist")}`
+              }
+              aria-label={`Wishlist, ${wishlistItemCount} ${wishlistItemCount === 1 ? "item" : "items"}`}
+              aria-current={pathname.startsWith("/wishlist") ? "page" : undefined}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Wishlist
+              <CartItemCount count={wishlistItemCount} className="mobile-nav__count" />
+            </Link>
+            <Link
+              className="mobile-nav__link"
+              href={
+                isAuthenticated
+                  ? "/cart"
+                  : `/login?next=${encodeURIComponent("/cart")}`
+              }
               aria-label={`Cart, ${cartItemCount} ${cartItemCount === 1 ? "item" : "items"}`}
               aria-current={pathname.startsWith("/cart") ? "page" : undefined}
               onClick={() => setIsMenuOpen(false)}
@@ -189,6 +251,7 @@ export function SiteHeader() {
           </div>
         </nav>
       ) : null}
+      <CartDrawer open={isCartOpen} onClose={closeCart} />
     </header>
   );
 }

@@ -144,15 +144,15 @@ Expand the launched multi-branch platform with staff roles and assignment, advan
 - [ ] Add public product list/detail APIs with search, category, price, availability, and ordering filters.
 - [ ] Build admin CRUD for products, variants, images, prices, stock, reorder level, and publication status.
 - [ ] Build the shop page, product details, search, category filters, stock messaging, featured products, and related products.
-- [ ] Implement wishlist for authenticated customers.
+- [x] Implement a login-required wishlist for authenticated customers.
 - [ ] Prevent purchase of unpublished or unavailable variants unless preorder is enabled.
 - [ ] Seed the approved product catalogue and map approved product images.
 - [ ] Test variant pricing, stock status, draft visibility, search, filters, and preorder presentation.
 
 ### 7. Cart and checkout
 
-- [ ] Implement persistent guest cart and authenticated cart.
-- [ ] Merge the guest cart safely after login.
+- [x] Implement a persistent authenticated customer cart.
+- [x] Require customer login before adding products to the cart.
 - [ ] Support variant selection, quantity updates, removal, and cart totals.
 - [ ] Revalidate price and availability on every cart mutation and at checkout.
 - [ ] Implement a 30-minute stock reservation with an explicit expiration timestamp.
