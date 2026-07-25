@@ -51,6 +51,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "core.middleware.RequestLoggingMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -81,18 +82,33 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": env("POSTGRES_DB"),
-        "USER": env("POSTGRES_USER"),
-        "PASSWORD": env("POSTGRES_PASSWORD"),
-        "HOST": env("POSTGRES_HOST", default="127.0.0.1"),
-        "PORT": env.int("POSTGRES_PORT", default=5432),
-        "CONN_MAX_AGE": 60,
-        "OPTIONS": {"connect_timeout": 10},
+database_url = env("DATABASE_URL", default="")
+
+if database_url:
+    # Render supplies its managed PostgreSQL connection as one URL. Supporting
+    # it directly also keeps credentials out of individual dashboard fields.
+    DATABASES = {
+        "default": env.db_url_config(
+            database_url,
+            conn_max_age=60,
+        )
     }
-}
+    DATABASES["default"].setdefault("OPTIONS", {})["connect_timeout"] = 10
+else:
+    # Local development continues to use the explicit variables documented in
+    # backend/.env.example and compose.yaml.
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": env("POSTGRES_DB"),
+            "USER": env("POSTGRES_USER"),
+            "PASSWORD": env("POSTGRES_PASSWORD"),
+            "HOST": env("POSTGRES_HOST", default="127.0.0.1"),
+            "PORT": env.int("POSTGRES_PORT", default=5432),
+            "CONN_MAX_AGE": 60,
+            "OPTIONS": {"connect_timeout": 10},
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -128,6 +144,14 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
