@@ -26,10 +26,15 @@ export function BranchSelector({
   const searchParams = useSearchParams();
 
   function selectBranch(code: string) {
+    const branchChanged = Boolean(selectedCode && selectedCode !== code);
     setSelectedCode(code);
     const params = new URLSearchParams(searchParams.toString());
     params.set("step", "branch");
     params.set("branch", code);
+    if (branchChanged) {
+      params.delete("service");
+      params.delete("services");
+    }
     startTransition(() => router.replace(`/book?${params.toString()}`, { scroll: false }));
   }
 

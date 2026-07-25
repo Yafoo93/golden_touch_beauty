@@ -1,8 +1,11 @@
 import { BranchSelector } from "@/components/booking/branch-selector";
+import { BookingFlow } from "@/components/booking/booking-flow";
+import { ServiceSelector } from "@/components/booking/service-selector";
 import { ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHero } from "@/components/ui/page-hero";
 import type { PaginatedResponse, PublicBranch } from "@/lib/branches";
+import { getServiceCatalogue } from "@/lib/services";
 
 
 async function getBranches(): Promise<PublicBranch[] | null> {
@@ -22,17 +25,41 @@ async function getBranches(): Promise<PublicBranch[] | null> {
 export default async function BookPage({
   searchParams,
 }: {
-  searchParams: Promise<{ branch?: string; step?: string }>;
+  searchParams: Promise<{
+    branch?: string;
+    step?: string;
+    service?: string;
+    services?: string;
+  }>;
 }) {
-  const [branches, params] = await Promise.all([getBranches(), searchParams]);
+  const params = await searchParams;
+  const branches = await getBranches();
+  const selectedBranch = branches?.find(
+    (branch) => branch.code === params.branch,
+  );
+  const bookingServices = params.step === "schedule" && selectedBranch;
+  const selectingServices = params.step === "service" && selectedBranch;
+  const catalogue = (selectingServices || bookingServices)
+    ? await getServiceCatalogue({ branch: selectedBranch.code })
+    : null;
+  const initialServiceSlugs = [
+    ...(params.services?.split(",") ?? []),
+    ...(params.service ? [params.service] : []),
+  ].filter(Boolean);
 
   return (
     <main className="booking-page">
       <PageHero
         eyebrow="Book an appointment"
         title="Choose Your"
-        accentTitle="Golden Touch Branch"
-        description="Select where you would like to receive your service. You can review branch-specific services and availability next."
+        accentTitle={bookingServices ? "Appointment" : selectingServices ? "Services" : "Golden Touch Branch"}
+        description={
+          bookingServices
+            ? `Complete your request for ${selectedBranch.name}.`
+            : selectingServices
+            ? `Select one or more services available at ${selectedBranch.name}.`
+            : "Select where you would like to receive your service. You can review branch-specific services and availability next."
+        }
         size="compact"
       />
       <section className="booking-page__content" aria-label="Branch selection">
@@ -47,6 +74,33 @@ export default async function BookPage({
             title="No branches are currently available"
             description="Please contact Golden Touch for assistance with your appointment."
           />
+        ) : bookingServices && catalogue ? (
+          <BookingFlow
+            branchCode={selectedBranch.code}
+            branchName={selectedBranch.name}
+            services={catalogue.services.filter((service) => initialServiceSlugs.includes(service.slug))}
+          />
+        ) : selectingServices && catalogue ? (
+          catalogue.unavailable ? (
+            <EmptyState
+              title="Services could not be loaded"
+              description="Check your connection and try again. Your selected branch has been preserved."
+              action={<ButtonLink href={`/book?step=service&branch=${encodeURIComponent(selectedBranch.code)}`}>Try again</ButtonLink>}
+            />
+          ) : catalogue.services.length ? (
+            <ServiceSelector
+              services={catalogue.services}
+              branchCode={selectedBranch.code}
+              branchName={selectedBranch.name}
+              initialServiceSlugs={initialServiceSlugs}
+            />
+          ) : (
+            <EmptyState
+              title="No services are currently available at this branch"
+              description="Choose another branch or contact Golden Touch for assistance."
+              action={<ButtonLink href="/book">Choose another branch</ButtonLink>}
+            />
+          )
         ) : (
           <BranchSelector
             branches={branches}

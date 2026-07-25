@@ -5,6 +5,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { formatGhanaCedis } from "@/lib/formatters";
 
 export type ServiceCardProps = {
+  id?: string;
   name: string;
   slug: string;
   category: string;
@@ -14,6 +15,14 @@ export type ServiceCardProps = {
   imageSrc: string;
   availableAt: string[];
   badge?: string;
+  priceType?: string;
+  allowsPayAtClinic?: boolean;
+  priceOptions?: {
+    id: string;
+    name: string;
+    price: string;
+    duration_minutes: number | null;
+  }[];
 };
 
 export function ServiceCard({

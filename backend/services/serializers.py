@@ -66,13 +66,20 @@ class FeaturedServiceSerializer(serializers.ModelSerializer):
 
 class PublicServiceSerializer(FeaturedServiceSerializer):
     category_slug = serializers.CharField(source="category.slug", read_only=True)
+    price_options = serializers.SerializerMethodField()
 
     class Meta(FeaturedServiceSerializer.Meta):
-        fields = FeaturedServiceSerializer.Meta.fields + (
+        fields = ("id",) + FeaturedServiceSerializer.Meta.fields + (
             "category_slug",
             "price_type",
             "pricing_notes",
+            "allows_pay_at_clinic",
+            "price_options",
         )
+
+    def get_price_options(self, service):
+        options = [option for option in service.price_options.all() if option.is_active]
+        return ServicePriceOptionSerializer(options, many=True).data
 
 
 class PublicServiceCategorySerializer(serializers.ModelSerializer):
@@ -88,7 +95,6 @@ class PublicServiceDetailSerializer(PublicServiceSerializer):
         read_only=True,
     )
     available_branches = serializers.SerializerMethodField()
-    price_options = serializers.SerializerMethodField()
 
     class Meta(PublicServiceSerializer.Meta):
         fields = PublicServiceSerializer.Meta.fields + (
@@ -112,9 +118,6 @@ class PublicServiceDetailSerializer(PublicServiceSerializer):
         ]
         return PublicBranchSerializer(branches, many=True).data
 
-    def get_price_options(self, service):
-        options = [option for option in service.price_options.all() if option.is_active]
-        return ServicePriceOptionSerializer(options, many=True).data
 
 
 class ManagementServiceListSerializer(serializers.ModelSerializer):

@@ -162,7 +162,7 @@ This is where the login and registration pages are built.
 - [x] `POST /api/v1/auth/register/` — create a customer account.
 - [x] `POST /api/v1/auth/login/` — authenticate by email or phone and create a secure session.
 - [x] `POST /api/v1/auth/logout/` — destroy the session.
-- [ ] `GET /api/v1/auth/me/` — return the currently logged-in user and permissions.
+- [x] `GET /api/v1/auth/me/` — return the currently logged-in user and permissions.
 - [x] `POST /api/v1/auth/verify-email/` — verify an email token.
 - [x] `POST /api/v1/auth/resend-verification/` — resend verification.
 - [x] `POST /api/v1/auth/password-reset/` — send reset instructions.
@@ -335,51 +335,51 @@ Use `/book` with the current step represented in the URL or query string so refr
 
 #### Step 1: Services and branch
 
-- [ ] Select one or more services.
-- [ ] Select Makola or Tse Addo.
-- [ ] Show only services available at the selected branch.
-- [ ] Show the separate duration and price of every selected service.
+- [x] Select one or more services.
+- [x] Select Makola or Tse Addo.
+- [x] Show only services available at the selected branch.
+- [x] Show the separate duration and price of every selected service.
 
 #### Step 2: Preferred date and time
 
-- [ ] Select a date.
-- [ ] Select a preferred time in 30-minute intervals.
-- [ ] Exclude blocked branch periods.
-- [ ] Explain that management may approve or propose another time.
-- [ ] Warn management if the appointment may finish after closing.
+- [x] Select a date.
+- [x] Select a preferred time in 30-minute intervals.
+- [x] Exclude blocked branch periods.
+- [x] Explain that management may approve or propose another time.
+- [x] Warn management if the appointment may finish after closing.
 
 #### Step 3: Recipient and treatment information
 
-- [ ] Use the logged-in customer’s saved contact information.
-- [ ] Allow booking for the customer or another person.
-- [ ] Capture recipient name/contact when different.
-- [ ] Capture relevant allergies, conditions, previous treatments, and notes securely.
-- [ ] Capture optional photograph and marketing consent separately.
+- [x] Use the logged-in customer’s saved contact information.
+- [x] Allow booking for the customer or another person.
+- [x] Capture recipient name/contact when different.
+- [x] Capture relevant allergies, conditions, previous treatments, and notes securely.
+- [x] Capture optional photograph and marketing consent separately.
 
 #### Step 4: Payment and confirmation
 
-- [ ] Show branch, services, date, time, recipient, item prices, total, payment requirement, and policies.
-- [ ] Allow the payment methods approved for those services.
-- [ ] Allow Pay at Clinic only when permitted.
-- [ ] Create the booking exactly once.
-- [ ] Display the booking reference and next steps.
+- [x] Show branch, services, date, time, recipient, item prices, total, payment requirement, and policies.
+- [x] Allow the payment methods approved for those services.
+- [x] Allow Pay at Clinic only when permitted.
+- [x] Create the booking exactly once.
+- [x] Display the booking reference and next steps.
 
 ### Backend work
 
-- [ ] Create Appointment, AppointmentServiceItem, and AppointmentHistory records.
-- [ ] Create booking blocks for holidays, meetings, events, or unavailable periods.
-- [ ] Implement Pending, Confirmed, Checked in, In progress, Completed, Cancelled, Rescheduled, and No-show statuses.
-- [ ] Block duplicate active bookings for the same customer and service.
-- [ ] Require an audited reason for an authorized duplicate override.
-- [ ] Allow management to approve, reject, cancel, or propose another time.
-- [ ] Require customer acceptance of a proposed time before confirmation.
+- [x] Create Appointment, AppointmentServiceItem, and AppointmentHistory records.
+- [x] Create booking blocks for holidays, meetings, events, or unavailable periods.
+- [x] Implement Pending, Confirmed, Checked in, In progress, Completed, Cancelled, Rescheduled, and No-show statuses.
+- [x] Block duplicate active bookings for the same customer and service.
+- [x] Require an audited reason for an authorized duplicate override.
+- [x] Allow management to approve, reject, cancel, or propose another time.
+- [x] Require customer acceptance of a proposed time before confirmation.
 
 ### Management pages
 
-- [ ] `/management/bookings` — booking calendar/list with branch and status filters.
-- [ ] `/management/bookings/[reference]` — services, customer, payment, history, and available actions.
-- [ ] `/management/booking-blocks` — block branch dates/times.
-- [ ] `/management/bookings/new` — create a phone, WhatsApp, or walk-in booking.
+- [x] `/management/bookings` — booking calendar/list with branch and status filters.
+- [x] `/management/bookings/[reference]` — services, customer, payment, history, and available actions.
+- [x] `/management/booking-blocks` — block branch dates/times.
+- [x] `/management/bookings/new` — create a phone, WhatsApp, or walk-in booking.
 
 ### Result
 
@@ -391,27 +391,27 @@ A customer can book multiple services at a selected branch, request a preferred 
 
 ### Customer pages
 
-- [ ] `/checkout` — address, fulfillment, branch, order summary, and payment.
-- [ ] `/checkout/success` — order number, payment state, receipt, and next steps.
-- [ ] `/checkout/failed` — explanation and safe retry action.
+- [x] `/checkout` — address, fulfillment, branch, order summary, and payment.
+- [x] `/checkout/success` — order number, payment state, receipt, and next steps.
+- [x] `/checkout/failed` — explanation and safe retry action.
 
 ### Checkout behavior
 
-- [ ] Require login before the final order is placed.
-- [ ] Select clinic pickup or delivery according to the approved policy.
-- [ ] For pickup, show only branches with sufficient stock.
-- [ ] For delivery, select or calculate a valid fulfillment branch internally.
-- [ ] Reserve stock for 30 minutes.
-- [ ] Release stock after timeout, failed payment, or cancellation.
-- [ ] Convert the reservation to a deduction only after successful payment.
-- [ ] Store an immutable snapshot of product names, variants, quantities, and prices.
+- [x] Require login before the final order is placed.
+- [x] Select clinic pickup or delivery according to the approved policy.
+- [x] For pickup, show only branches with sufficient stock.
+- [x] For delivery, select or calculate a valid fulfillment branch internally.
+- [x] Reserve stock for 30 minutes.
+- [x] Release stock after timeout, failed payment, or cancellation.
+- [x] Convert the reservation to a deduction only after successful payment.
+- [x] Store an immutable snapshot of product names, variants, quantities, and prices.
 
 ### Backend work
 
-- [ ] Create Order and OrderItem records.
-- [ ] Create StockReservation records.
-- [ ] Implement Awaiting payment, Payment under review, Paid, Processing, Ready for pickup, Shipped, Delivered, Cancelled, Returned, and Refunded statuses.
-- [ ] Prevent overselling when two customers buy the last unit simultaneously.
+- [x] Create Order and OrderItem records.
+- [x] Create StockReservation records.
+- [x] Implement Awaiting payment, Payment under review, Paid, Processing, Ready for pickup, Shipped, Delivered, Cancelled, Returned, and Refunded statuses.
+- [x] Prevent overselling when two customers buy the last unit simultaneously.
 
 ### Result
 

@@ -13,7 +13,7 @@ from django.utils import timezone
 from rest_framework.authentication import SessionAuthentication
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
@@ -51,6 +51,13 @@ class CsrfTokenView(APIView):
     def get(self, request):
         get_token(request)
         return Response({"detail": "CSRF cookie set."})
+
+
+class CurrentUserView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response({"user": CurrentUserSerializer(request.user).data})
 
 
 class RegisterView(APIView):

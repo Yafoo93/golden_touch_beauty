@@ -13,7 +13,14 @@ These read-only endpoints do not require authentication:
 - `GET /api/v1/services/categories/` lists categories that contain at least one public service.
 - `GET /api/v1/services/featured/` lists up to six featured public services.
 
-The service list accepts `category`, `search`, and `ordering` query parameters.
+The service list accepts `category`, `search`, `ordering`, and `branch` query
+parameters. `branch` is an active branch code and is used by booking to return
+only services available at the selected location.
+
+The booking branch selector reads from `GET /api/v1/branches/`, which exposes
+only active public branches. Its selected branch code is preserved in the
+`/book` query string; changing branches clears any earlier service selection so
+services from one location cannot leak into another location's booking draft.
 Supported ordering fields are `name`, `price`, `duration_minutes`, and
 `category__name`; prefix a field with `-` for descending order. Draft,
 inactive, branch-unavailable, and category-inactive services are excluded.
@@ -208,3 +215,49 @@ try {
 ```
 
 Form pages should use `error.details` for field-level messages and `error.message` for the page-level alert. They should not implement separate parsing rules for individual endpoints.
+
+## Booking endpoints
+
+Customer endpoints use the authenticated Django session:
+
+- `GET/POST /api/v1/bookings/`
+- `GET /api/v1/bookings/availability/?branch={code}&date=YYYY-MM-DD&duration={minutes}`
+- `GET /api/v1/bookings/{reference}/`
+- `POST /api/v1/bookings/{reference}/proposal/`
+
+Management endpoints are restricted to the owner or staff assigned to the
+booking/block branch:
+
+- `GET/POST /api/v1/bookings/management/all/`
+- `GET /api/v1/bookings/management/options/`
+- `GET /api/v1/bookings/management/{reference}/`
+- `POST /api/v1/bookings/management/{reference}/action/`
+- `GET/POST /api/v1/bookings/management/blocks/`
+
+Booking creation requires a UUID `client_request_id`. Repeating a successful
+request with the same request ID returns the existing booking rather than
+creating a duplicate. The selected service names, options, prices, and
+durations are snapshotted into booking service items.
+
+## Checkout and order endpoints
+
+All checkout and customer-order endpoints require an authenticated Django
+session:
+
+- `GET /api/v1/orders/checkout/options/`
+- `POST /api/v1/orders/checkout/`
+- `GET /api/v1/orders/`
+- `GET /api/v1/orders/{reference}/`
+- `POST /api/v1/orders/{reference}/cancel/`
+
+Checkout receives a UUID `client_request_id`. The backend locks the customer
+and selected branch inventory rows, rechecks live prices and available stock,
+creates immutable order-item snapshots, and reserves stock for 30 minutes.
+Repeating the same request ID returns the existing order.
+
+Run `python manage.py release_expired_order_reservations` from a production
+scheduler at least once per minute. It releases expired reservations, records
+append-only stock movements, and marks their unpaid orders cancelled. Payment
+failure/cancellation uses the same release service. Verified payment calls
+`orders.services.capture_order_stock`, which atomically converts reservations
+into final stock deductions and is safe to call repeatedly.

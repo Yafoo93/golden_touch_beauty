@@ -158,6 +158,32 @@ class PublicServiceCatalogueApiTests(TestCase):
             ["brightening-facial"],
         )
 
+    def test_list_filters_services_by_selected_branch_code(self):
+        second_branch = Branch.objects.create(
+            name="Tse Addo catalogue",
+            code="TSE-ADDO-CATALOGUE",
+            address="Accra",
+            telephone_number="+233207911043",
+            opening_days=["monday"],
+            opening_time="07:30",
+            closing_time="19:00",
+        )
+        ServiceBranchAvailability.objects.create(
+            service=self.hair_service,
+            branch=second_branch,
+        )
+
+        response = self.client.get(
+            reverse("services:list"),
+            {"branch": second_branch.code},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            [service["slug"] for service in response.json()],
+            ["hair-hydration"],
+        )
+
     def test_list_searches_name_description_and_category(self):
         response = self.client.get(reverse("services:list"), {"search": "radiance"})
         self.assertEqual(

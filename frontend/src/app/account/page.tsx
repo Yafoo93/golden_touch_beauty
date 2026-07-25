@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ButtonLink } from "@/components/ui/button";
+import { AccountBookings } from "@/components/account/account-bookings";
 
 export const metadata: Metadata = { title: "My Account" };
 
@@ -24,6 +25,7 @@ export default function AccountPage() {
           <ButtonLink href="/logout" variant="black">Sign out</ButtonLink>
         </div>
       </section>
+      <AccountBookings />
     </main>
   );
 }

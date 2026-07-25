@@ -12,6 +12,7 @@ export type ServicePriceOption = {
 };
 
 type ServiceResponse = {
+  id: string;
   name: string;
   slug: string;
   category: string;
@@ -23,6 +24,8 @@ type ServiceResponse = {
   duration_minutes: number;
   image_path: string;
   available_at: string[];
+  allows_pay_at_clinic: boolean;
+  price_options: ServicePriceOption[];
 };
 
 export type ServiceCatalogueResult = {
@@ -68,10 +71,12 @@ async function fetchJson<T>(url: string): Promise<T | null> {
 export async function getServiceCatalogue(filters: {
   category?: string;
   search?: string;
+  branch?: string;
 }): Promise<ServiceCatalogueResult> {
   const query = new URLSearchParams();
   if (filters.category) query.set("category", filters.category);
   if (filters.search) query.set("search", filters.search);
+  if (filters.branch) query.set("branch", filters.branch);
   const [services, categories] = await Promise.all([
     fetchJson<ServiceResponse[]>(
       apiUrl(`${query.size ? `?${query.toString()}` : ""}`),
@@ -83,6 +88,7 @@ export async function getServiceCatalogue(filters: {
     unavailable: services === null || categories === null,
     categories: categories ?? [],
     services: (services ?? []).map((service) => ({
+      id: service.id,
       name: service.name,
       slug: service.slug,
       category: service.category,
@@ -91,6 +97,9 @@ export async function getServiceCatalogue(filters: {
       durationMinutes: service.duration_minutes,
       imageSrc: service.image_path || "/images/hero1.jpeg",
       availableAt: service.available_at,
+      priceType: service.price_type,
+      allowsPayAtClinic: service.allows_pay_at_clinic,
+      priceOptions: service.price_options,
       badge:
         service.price_type === "starting_from"
           ? "Starting from"

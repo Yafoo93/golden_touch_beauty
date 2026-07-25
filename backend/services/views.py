@@ -80,8 +80,15 @@ class PublicServiceListView(generics.ListAPIView):
         )
         category = self.request.query_params.get("category", "").strip()
         search = self.request.query_params.get("search", "").strip()
+        branch = self.request.query_params.get("branch", "").strip()
         if category:
             queryset = queryset.filter(category__slug=category)
+        if branch:
+            queryset = queryset.filter(
+                branch_availability__branch__code__iexact=branch,
+                branch_availability__is_available=True,
+                branch_availability__branch__is_active=True,
+            )
         if search:
             queryset = queryset.filter(
                 Q(name__icontains=search)
