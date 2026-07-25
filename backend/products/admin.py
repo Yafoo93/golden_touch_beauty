@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Product, ProductCategory, ProductVariant
+from .models import CustomerCartItem, Product, ProductCategory, ProductVariant, WishlistItem
 
 
 @admin.register(ProductCategory)
@@ -47,4 +47,23 @@ class ProductVariantAdmin(admin.ModelAdmin):
     )
     list_filter = ("is_preorder", "is_active", "product__category")
     search_fields = ("sku", "product__name", "name")
+    readonly_fields = ("id", "created_at", "updated_at")
+
+
+@admin.register(WishlistItem)
+class WishlistItemAdmin(admin.ModelAdmin):
+    list_display = ("customer", "product", "created_at")
+    search_fields = ("customer__email", "customer__full_name", "product__name")
+    readonly_fields = ("id", "created_at", "updated_at")
+
+
+@admin.register(CustomerCartItem)
+class CustomerCartItemAdmin(admin.ModelAdmin):
+    list_display = ("customer", "variant", "quantity", "updated_at")
+    search_fields = (
+        "customer__email",
+        "customer__phone_number",
+        "variant__sku",
+        "variant__product__name",
+    )
     readonly_fields = ("id", "created_at", "updated_at")

@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models
 
@@ -31,6 +32,7 @@ class Product(BaseModel):
     slug = models.SlugField(max_length=200, unique=True)
     brand = models.CharField(max_length=150, blank=True)
     description = models.TextField()
+    image = models.ImageField(upload_to="products/%Y/%m/", blank=True)
     image_path = models.CharField(max_length=255, blank=True)
     is_featured = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
@@ -41,6 +43,63 @@ class Product(BaseModel):
 
     def __str__(self):
         return self.name
+
+
+class WishlistItem(BaseModel):
+    customer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="wishlist_items",
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="wishlist_items",
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["customer", "product"],
+                name="unique_customer_wishlist_product",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.customer} saved {self.product}"
+
+
+class CustomerCartItem(BaseModel):
+    customer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="cart_items",
+    )
+    variant = models.ForeignKey(
+        "products.ProductVariant",
+        on_delete=models.PROTECT,
+        related_name="customer_cart_items",
+    )
+    quantity = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1)],
+    )
+
+    class Meta:
+        ordering = ["created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["customer", "variant"],
+                name="unique_customer_cart_variant",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(quantity__gte=1, quantity__lte=20),
+                name="customer_cart_quantity_1_to_20",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.customer} cart: {self.variant} x{self.quantity}"
 
 
 class ProductVariant(BaseModel):

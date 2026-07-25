@@ -20,6 +20,10 @@ const nextConfig: NextConfig = {
         // proxy and accidentally request a slashless Django endpoint.
         destination: `${backendUrl}/api/:path*/`,
       },
+      {
+        source: "/media/:path*",
+        destination: `${backendUrl}/media/:path*`,
+      },
     ];
   },
 };
