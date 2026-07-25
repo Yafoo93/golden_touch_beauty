@@ -88,11 +88,9 @@ if database_url:
     # Render supplies its managed PostgreSQL connection as one URL. Supporting
     # it directly also keeps credentials out of individual dashboard fields.
     DATABASES = {
-        "default": env.db_url_config(
-            database_url,
-            conn_max_age=60,
-        )
+        "default": env.db_url_config(database_url)
     }
+    DATABASES["default"]["CONN_MAX_AGE"] = 60
     DATABASES["default"].setdefault("OPTIONS", {})["connect_timeout"] = 10
 else:
     # Local development continues to use the explicit variables documented in
