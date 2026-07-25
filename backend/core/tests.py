@@ -1,10 +1,13 @@
 import json
 import logging
+import base64
 from datetime import timedelta
 from io import StringIO
 
 from django.core.management import call_command
 from django.core.management.base import CommandError
+from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError, transaction
 from django.test import TestCase
 from django.urls import reverse
@@ -13,9 +16,237 @@ from rest_framework import permissions, serializers, status
 from rest_framework.test import APIRequestFactory
 from rest_framework.views import APIView
 
-from .models import IdempotencyRecord
+from .models import GalleryItem, IdempotencyRecord, Testimonial, WebsiteContent
 from .references import generate_reference
 from .logging import JsonFormatter
+
+
+User = get_user_model()
+
+
+class WebsiteContentApiTests(TestCase):
+    def setUp(self):
+        self.content = WebsiteContent.objects.create(
+            key="test-home-title",
+            page="home",
+            section="Hero",
+            label="Test title",
+            value="Original title",
+        )
+        self.owner = User.objects.create_superuser(
+            email="owner-content@example.com",
+            phone_number="+233241000001",
+            full_name="Content Owner",
+            password="OwnerPass123!",
+        )
+        self.customer = User.objects.create_user(
+            email="customer-content@example.com",
+            phone_number="+233241000002",
+            full_name="Content Customer",
+            password="CustomerPass123!",
+        )
+
+    def test_public_list_only_contains_published_content(self):
+        hidden = WebsiteContent.objects.create(
+            key="test-hidden-title",
+            page="home",
+            section="Hero",
+            label="Hidden title",
+            value="Hidden",
+            is_published=False,
+        )
+        response = self.client.get(reverse("core:public-content"))
+        keys = {item["key"] for item in response.json()}
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(self.content.key, keys)
+        self.assertNotIn(hidden.key, keys)
+
+    def test_owner_can_list_and_update_approved_content(self):
+        self.client.force_login(self.owner)
+        list_response = self.client.get(reverse("core:management-content-list"))
+        update_response = self.client.patch(
+            reverse("core:management-content-detail", args=[self.content.id]),
+            data=json.dumps({"value": "Updated title", "key": "changed-key"}),
+            content_type="application/json",
+        )
+        self.content.refresh_from_db()
+
+        self.assertEqual(list_response.status_code, 200)
+        self.assertEqual(update_response.status_code, 200)
+        self.assertEqual(self.content.value, "Updated title")
+        self.assertEqual(self.content.key, "test-home-title")
+        self.assertEqual(self.content.updated_by, self.owner)
+
+    def test_customer_cannot_manage_content(self):
+        self.client.force_login(self.customer)
+        response = self.client.patch(
+            reverse("core:management-content-detail", args=[self.content.id]),
+            data=json.dumps({"value": "Unauthorized update"}),
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+
+class GalleryItemApiTests(TestCase):
+    def setUp(self):
+        self.item = GalleryItem.objects.create(
+            title="Published work",
+            category="Skin",
+            alt_text="A completed skin-care service",
+            image_path="/images/facial_treatment.jpeg",
+            display_order=1,
+            is_published=True,
+        )
+        self.hidden = GalleryItem.objects.create(
+            title="Draft work",
+            category="Hair",
+            alt_text="A draft hair-care image",
+            image_path="/images/hair_treatment.jpeg",
+            display_order=2,
+            is_published=False,
+        )
+        self.owner = User.objects.create_superuser(
+            email="gallery-owner@example.com",
+            phone_number="+233241000011",
+            full_name="Gallery Owner",
+            password="OwnerPass123!",
+        )
+        self.customer = User.objects.create_user(
+            email="gallery-customer@example.com",
+            phone_number="+233241000012",
+            full_name="Gallery Customer",
+            password="CustomerPass123!",
+        )
+
+    def test_public_gallery_only_contains_published_items(self):
+        response = self.client.get(reverse("core:public-gallery"))
+        titles = {item["title"] for item in response.json()}
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(self.item.title, titles)
+        self.assertNotIn(self.hidden.title, titles)
+
+    def test_owner_can_create_and_update_gallery_item(self):
+        self.client.force_login(self.owner)
+        png = base64.b64decode(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+        )
+        create_response = self.client.post(
+            reverse("core:management-gallery-list"),
+            {
+                "title": "New gallery work",
+                "category": "Bridal",
+                "alt_text": "A completed bridal styling service",
+                "display_size": "wide",
+                "display_order": 3,
+                "is_published": "true",
+                "image": SimpleUploadedFile("gallery.png", png, content_type="image/png"),
+            },
+        )
+        self.assertEqual(create_response.status_code, 201)
+
+        update_response = self.client.patch(
+            reverse("core:management-gallery-detail", args=[self.item.id]),
+            data=json.dumps({"title": "Updated published work"}),
+            content_type="application/json",
+        )
+        self.item.refresh_from_db()
+        self.assertEqual(update_response.status_code, 200)
+        self.assertEqual(self.item.title, "Updated published work")
+        self.assertEqual(self.item.updated_by, self.owner)
+
+    def test_customer_cannot_manage_gallery(self):
+        self.client.force_login(self.customer)
+        response = self.client.get(reverse("core:management-gallery-list"))
+        self.assertEqual(response.status_code, 403)
+
+
+class TestimonialModerationApiTests(TestCase):
+    def setUp(self):
+        self.pending = Testimonial.objects.create(
+            client_name="Pending Client",
+            service_context="Facial treatment",
+            quote="A pending testimonial.",
+        )
+        self.public = Testimonial.objects.create(
+            client_name="Approved Client",
+            service_context="Hair care",
+            quote="An approved and visible testimonial.",
+            consent_confirmed=True,
+            moderation_status=Testimonial.ModerationStatus.APPROVED,
+            is_visible=True,
+        )
+        self.hidden = Testimonial.objects.create(
+            client_name="Hidden Client",
+            service_context="Bridal styling",
+            quote="An approved but hidden testimonial.",
+            consent_confirmed=True,
+            moderation_status=Testimonial.ModerationStatus.APPROVED,
+            is_visible=False,
+        )
+        self.owner = User.objects.create_superuser(
+            email="testimonial-owner@example.com",
+            phone_number="+233241000021",
+            full_name="Testimonial Owner",
+            password="OwnerPass123!",
+        )
+        self.customer = User.objects.create_user(
+            email="testimonial-customer@example.com",
+            phone_number="+233241000022",
+            full_name="Testimonial Customer",
+            password="CustomerPass123!",
+        )
+
+    def test_public_list_only_contains_approved_visible_consented_items(self):
+        response = self.client.get(reverse("core:public-testimonials"))
+        names = {item["client_name"] for item in response.json()}
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(self.public.client_name, names)
+        self.assertNotIn(self.pending.client_name, names)
+        self.assertNotIn(self.hidden.client_name, names)
+
+    def test_approval_requires_consent(self):
+        self.client.force_login(self.owner)
+        response = self.client.patch(
+            reverse("core:management-testimonial-detail", args=[self.pending.id]),
+            data=json.dumps({"moderation_status": "approved"}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_owner_can_approve_and_show_testimonial(self):
+        self.client.force_login(self.owner)
+        response = self.client.patch(
+            reverse("core:management-testimonial-detail", args=[self.pending.id]),
+            data=json.dumps(
+                {
+                    "consent_confirmed": True,
+                    "moderation_status": "approved",
+                    "is_visible": True,
+                    "is_featured": True,
+                    "display_order": 1,
+                }
+            ),
+            content_type="application/json",
+        )
+        self.pending.refresh_from_db()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            self.pending.moderation_status,
+            Testimonial.ModerationStatus.APPROVED,
+        )
+        self.assertTrue(self.pending.is_visible)
+        self.assertEqual(self.pending.reviewed_by, self.owner)
+        self.assertIsNotNone(self.pending.reviewed_at)
+
+    def test_customer_cannot_moderate_testimonials(self):
+        self.client.force_login(self.customer)
+        response = self.client.get(reverse("core:management-testimonial-list"))
+        self.assertEqual(response.status_code, 403)
 
 
 class ValidationFailureView(APIView):

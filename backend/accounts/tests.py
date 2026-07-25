@@ -3,6 +3,7 @@ from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.core import signing
 from django.core import mail
+from django.core.cache import cache
 from django.test import TestCase
 from django.urls import reverse
 from django.utils.encoding import force_bytes
@@ -19,6 +20,9 @@ User = get_user_model()
 
 
 class RegistrationApiTests(TestCase):
+    def setUp(self):
+        cache.clear()
+
     def payload(self, **overrides):
         data = {
             "full_name": "Ama Mensah",
@@ -48,6 +52,18 @@ class RegistrationApiTests(TestCase):
         self.assertEqual(str(self.client.session.get("_auth_user_id")), str(user.pk))
         self.assertTrue(user.customer_consent.marketing_consent)
         self.assertTrue(response.cookies.get("csrftoken"))
+
+    def test_registration_accepts_common_international_phone_formatting(self):
+        response = self.client.post(
+            reverse("accounts:register"),
+            self.payload(phone_number="00 233 (24) 123-4567"),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(
+            User.objects.get(email="ama@example.com").phone_number,
+            "+233241234567",
+        )
 
     def test_registration_requires_csrf_when_checks_are_enabled(self):
         from django.test import Client
@@ -106,6 +122,7 @@ class RegistrationApiTests(TestCase):
 
 class LoginApiTests(TestCase):
     def setUp(self):
+        cache.clear()
         self.user = User.objects.create_user(
             email="customer@example.com",
             phone_number="+233241234567",
@@ -269,6 +286,7 @@ class LogoutApiTests(TestCase):
 
 class PasswordResetRequestApiTests(TestCase):
     def setUp(self):
+        cache.clear()
         self.user = User.objects.create_user(
             email="reset@example.com",
             phone_number="+233241234568",
@@ -318,6 +336,7 @@ class PasswordResetRequestApiTests(TestCase):
 
 class PasswordResetConfirmApiTests(TestCase):
     def setUp(self):
+        cache.clear()
         self.user = User.objects.create_user(
             email="confirm-reset@example.com",
             phone_number="+233241234569",
@@ -381,6 +400,7 @@ class PasswordResetConfirmApiTests(TestCase):
 
 class EmailVerificationResendApiTests(TestCase):
     def setUp(self):
+        cache.clear()
         self.user = User.objects.create_user(
             email="verify@example.com",
             phone_number="+233241234570",
@@ -429,6 +449,7 @@ class EmailVerificationResendApiTests(TestCase):
 
 class EmailVerificationConfirmApiTests(TestCase):
     def setUp(self):
+        cache.clear()
         self.user = User.objects.create_user(
             email="verification-confirm@example.com",
             phone_number="+233241234571",

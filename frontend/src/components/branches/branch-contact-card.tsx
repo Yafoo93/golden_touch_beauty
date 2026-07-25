@@ -21,6 +21,7 @@ function ContactIcon({ type }: { type: "location" | "phone" | "clock" | "email" 
 export function BranchContactCard({ branch }: { branch: PublicBranch }) {
   const telephoneNumbers = [branch.telephone_number, branch.secondary_telephone_number].filter(Boolean);
   const whatsappNumbers = [branch.whatsapp_number, branch.secondary_whatsapp_number].filter(Boolean);
+
   return (
     <article className="branch-contact-card">
       <header><p>Golden Touch branch</p><h2>{branch.name}</h2></header>
@@ -28,11 +29,47 @@ export function BranchContactCard({ branch }: { branch: PublicBranch }) {
         <div><dt><ContactIcon type="location" /><span className="sr-only">Address</span></dt><dd>{branch.address}</dd></div>
         <div><dt><ContactIcon type="clock" /><span className="sr-only">Opening hours</span></dt><dd>{formatOpeningDays(branch.opening_days)}<span>{formatBranchTime(branch.opening_time)} - {formatBranchTime(branch.closing_time)}</span></dd></div>
         <div><dt><ContactIcon type="phone" /><span className="sr-only">Telephone</span></dt><dd>{telephoneNumbers.map((number) => <a href={`tel:${number}`} key={number}>{formatGhanaPhone(number)}</a>)}</dd></div>
-        {branch.email ? <div><dt><ContactIcon type="email" /><span className="sr-only">Email</span></dt><dd><a href={`mailto:${branch.email}`}>{branch.email}</a></dd></div> : null}
+        <div>
+          <dt><ContactIcon type="email" /><span className="sr-only">Email</span></dt>
+          <dd>
+            {branch.email ? (
+              <a href={`mailto:${branch.email}`}>{branch.email}</a>
+            ) : (
+              <span>Email address not available yet</span>
+            )}
+          </dd>
+        </div>
       </dl>
       <div className="branch-contact-card__actions">
-        {whatsappNumbers.map((number, index) => <ButtonLink href={whatsappUrl(number)} target="_blank" rel="noreferrer" variant={index === 0 ? "gold" : "black"} size="small" key={number}>WhatsApp {formatGhanaPhone(number)}</ButtonLink>)}
-        {branch.google_maps_url ? <ButtonLink href={branch.google_maps_url} target="_blank" rel="noreferrer" variant="outline" size="small">Open map</ButtonLink> : <span className="branch-contact-card__unavailable">Map link coming soon</span>}
+        {whatsappNumbers.map((number, index) => (
+          <ButtonLink
+            href={whatsappUrl(number)}
+            target="_blank"
+            rel="noopener noreferrer"
+            variant={index === 0 ? "gold" : "black"}
+            size="small"
+            aria-label={`Chat with the ${branch.name} branch on WhatsApp at ${formatGhanaPhone(number)}`}
+            key={number}
+          >
+            WhatsApp {formatGhanaPhone(number)}
+          </ButtonLink>
+        ))}
+        {branch.google_maps_url ? (
+          <ButtonLink
+            href={branch.google_maps_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            variant="outline"
+            size="small"
+            aria-label={`Open ${branch.name} branch in Google Maps`}
+          >
+            Open Google Maps
+          </ButtonLink>
+        ) : (
+          <span className="branch-contact-card__unavailable">
+            Map location not available yet
+          </span>
+        )}
       </div>
     </article>
   );

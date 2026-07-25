@@ -1,4 +1,5 @@
 from collections.abc import Iterable
+from uuid import UUID
 
 from rest_framework.permissions import BasePermission
 
@@ -54,6 +55,11 @@ def can_access_branch(user, branch_or_id, required_roles: Iterable[str] | None =
     if is_owner(user):
         return True
     branch_id = getattr(branch_or_id, "pk", branch_or_id)
+    if isinstance(branch_id, str):
+        try:
+            branch_id = UUID(branch_id)
+        except ValueError:
+            return False
     return branch_id in get_accessible_branch_ids(user, required_roles)
 
 

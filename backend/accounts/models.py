@@ -1,7 +1,10 @@
 import uuid
 
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
+from django.core.exceptions import ValidationError
 from django.db import models
+
+from core.phone import is_international_phone_number, normalize_phone_number
 
 from .managers import UserManager
 
@@ -68,3 +71,11 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.full_name or self.email
+
+    def save(self, *args, **kwargs):
+        self.phone_number = normalize_phone_number(self.phone_number)
+        if not is_international_phone_number(self.phone_number):
+            raise ValidationError(
+                {"phone_number": "Enter a valid phone number with its country code."}
+            )
+        super().save(*args, **kwargs)

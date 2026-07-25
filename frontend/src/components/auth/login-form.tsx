@@ -38,6 +38,15 @@ export function LoginForm() {
           password: String(data.get("password") ?? ""),
         }),
       });
+      const requestedPath = new URLSearchParams(window.location.search).get("next");
+      if (
+        !response.user.is_staff &&
+        requestedPath?.startsWith("/") &&
+        !requestedPath.startsWith("//")
+      ) {
+        window.location.replace(requestedPath);
+        return;
+      }
       if (response.user.post_login_path) {
         window.location.replace(response.user.post_login_path);
         return;

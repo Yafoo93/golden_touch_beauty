@@ -8,6 +8,7 @@ from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
 
+from core.phone import normalize_phone_number
 from customers.models import CustomerConsent
 from branches.permissions import get_staff_portal_access
 
@@ -39,11 +40,7 @@ class RegistrationSerializer(serializers.Serializer):
         return normalized
 
     def validate_phone_number(self, value):
-        normalized = re.sub(r"[\s()-]", "", value)
-        if normalized.startswith("0"):
-            normalized = f"+233{normalized[1:]}"
-        elif normalized.startswith("233"):
-            normalized = f"+{normalized}"
+        normalized = normalize_phone_number(value)
         if not re.fullmatch(r"\+[1-9]\d{8,14}", normalized):
             raise serializers.ValidationError("Enter a valid phone number with its country code.")
         if User.objects.filter(phone_number=normalized).exists():
@@ -132,11 +129,7 @@ class LoginSerializer(serializers.Serializer):
     def validate(self, attrs):
         identifier = attrs["identifier"].strip()
         if "@" not in identifier:
-            identifier = re.sub(r"[\s()-]", "", identifier)
-            if identifier.startswith("0"):
-                identifier = f"+233{identifier[1:]}"
-            elif identifier.startswith("233"):
-                identifier = f"+{identifier}"
+            identifier = normalize_phone_number(identifier)
 
         user = authenticate(
             request=self.context.get("request"),

@@ -4,6 +4,7 @@ from django.core.validators import RegexValidator
 from django.db import models
 
 from core.models import BaseModel
+from core.phone import is_international_phone_number, normalize_phone_number
 
 
 class Branch(BaseModel):
@@ -43,6 +44,20 @@ class Branch(BaseModel):
 
     def save(self, *args, **kwargs):
         self.code = self.code.strip().upper()
+        for field_name in (
+            "telephone_number",
+            "secondary_telephone_number",
+            "whatsapp_number",
+            "secondary_whatsapp_number",
+        ):
+            normalized = normalize_phone_number(getattr(self, field_name))
+            if normalized and not is_international_phone_number(normalized):
+                raise ValidationError(
+                    {field_name: "Enter a valid phone number with its country code."}
+                )
+            if field_name == "telephone_number" and not normalized:
+                raise ValidationError({field_name: "A telephone number is required."})
+            setattr(self, field_name, normalized)
         super().save(*args, **kwargs)
 
     def __str__(self):

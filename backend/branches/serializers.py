@@ -3,6 +3,7 @@ import re
 from rest_framework import serializers
 
 from accounts.models import User
+from core.phone import normalize_phone_number
 
 from .models import Branch, BranchStaffAssignment
 
@@ -82,6 +83,28 @@ class ManagementBranchCreateSerializer(serializers.ModelSerializer):
         if duplicate.exists():
             raise serializers.ValidationError("A branch with this code already exists.")
         return code
+
+    def _validate_phone(self, value, *, required=False):
+        normalized = normalize_phone_number(value)
+        if not normalized and not required:
+            return ""
+        if not re.fullmatch(r"\+[1-9]\d{8,14}", normalized):
+            raise serializers.ValidationError(
+                "Enter a valid phone number with its country code."
+            )
+        return normalized
+
+    def validate_telephone_number(self, value):
+        return self._validate_phone(value, required=True)
+
+    def validate_secondary_telephone_number(self, value):
+        return self._validate_phone(value)
+
+    def validate_whatsapp_number(self, value):
+        return self._validate_phone(value)
+
+    def validate_secondary_whatsapp_number(self, value):
+        return self._validate_phone(value)
 
     def validate_opening_days(self, value):
         valid_days = {

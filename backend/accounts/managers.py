@@ -1,5 +1,7 @@
 from django.contrib.auth.base_user import BaseUserManager
 
+from core.phone import normalize_phone_number
+
 
 class UserManager(BaseUserManager):
     use_in_migrations = True
@@ -22,7 +24,7 @@ class UserManager(BaseUserManager):
             raise ValueError("A full name is required.")
 
         email = self.normalize_email(email)
-        phone_number = phone_number.strip()
+        phone_number = normalize_phone_number(phone_number)
 
         user = self.model(
             email=email,

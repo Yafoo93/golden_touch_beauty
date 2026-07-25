@@ -225,6 +225,48 @@ class ManagementBranchApiTests(TestCase):
         self.assertEqual(response.json()["code"], "EAST-LEGON")
         self.assertTrue(Branch.objects.filter(code="EAST-LEGON").exists())
 
+    def test_branch_contact_numbers_are_normalized(self):
+        self.client.force_login(self.owner)
+        response = self.client.post(
+            reverse("branches:management-list"),
+            {
+                "name": "Normalized Contacts",
+                "code": "NORMALIZED",
+                "address": "Accra",
+                "telephone_number": "024 137 0429",
+                "secondary_telephone_number": "00 233 25 771 1182",
+                "whatsapp_number": "(024) 137-0429",
+                "opening_days": ["monday"],
+                "opening_time": "08:00",
+                "closing_time": "18:00",
+            },
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        branch = Branch.objects.get(code="NORMALIZED")
+        self.assertEqual(branch.telephone_number, "+233241370429")
+        self.assertEqual(branch.secondary_telephone_number, "+233257711182")
+        self.assertEqual(branch.whatsapp_number, "+233241370429")
+
+    def test_invalid_branch_contact_number_is_rejected(self):
+        self.client.force_login(self.owner)
+        response = self.client.post(
+            reverse("branches:management-list"),
+            {
+                "name": "Invalid Contact",
+                "code": "INVALID-CONTACT",
+                "address": "Accra",
+                "telephone_number": "123",
+                "opening_days": ["monday"],
+                "opening_time": "08:00",
+                "closing_time": "18:00",
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("telephone_number", response.json()["error"]["details"])
+
     def test_non_owner_cannot_create_branch(self):
         self.client.force_login(self.staff)
         response = self.client.post(

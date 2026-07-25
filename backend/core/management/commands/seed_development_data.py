@@ -309,7 +309,7 @@ class Command(BaseCommand):
             )
             categories[name] = category
 
-        for data in SERVICES:
+        for index, data in enumerate(SERVICES):
             service, _ = Service.objects.update_or_create(
                 slug=slugify(data["name"]),
                 defaults={
@@ -325,6 +325,7 @@ class Command(BaseCommand):
                     "is_home_service": False,
                     "requires_full_payment": True,
                     "allows_pay_at_clinic": True,
+                    "is_featured": index < 3,
                     "is_active": True,
                     "is_published": True,
                 },
@@ -349,7 +350,7 @@ class Command(BaseCommand):
             )
             categories[name] = category
 
-        for (
+        for index, (
             name,
             category_name,
             sku,
@@ -357,7 +358,7 @@ class Command(BaseCommand):
             cost_price,
             image_path,
             description,
-        ) in PRODUCTS:
+        ) in enumerate(PRODUCTS):
             product, _ = Product.objects.update_or_create(
                 slug=slugify(name),
                 defaults={
@@ -366,6 +367,7 @@ class Command(BaseCommand):
                     "brand": "Marcelito" if name.startswith("Marcelito") else "",
                     "description": description,
                     "image_path": image_path,
+                    "is_featured": index < 4,
                     "is_active": True,
                     "is_published": True,
                 },

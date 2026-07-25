@@ -15,7 +15,10 @@ from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
+
+from auditlog.services import actor_role_for, client_device, client_ip, record_event
 
 from .models import User
 from .serializers import (
@@ -52,6 +55,8 @@ class CsrfTokenView(APIView):
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "auth-register"
 
     def post(self, request):
         enforce_csrf(request)
@@ -60,6 +65,20 @@ class RegisterView(APIView):
         user = serializer.save()
         login(request, user, backend="accounts.backends.EmailOrPhoneBackend")
         get_token(request)
+        record_event(
+            action="auth.registered",
+            record_type="user",
+            record_id=user.pk,
+            actor=user,
+            actor_role=actor_role_for(user),
+            new_values={
+                "full_name": user.full_name,
+                "email": user.email,
+                "phone_number": user.phone_number,
+            },
+            ip_address=client_ip(request),
+            device_identifier=client_device(request),
+        )
         return Response(
             {"user": CurrentUserSerializer(user).data},
             status=status.HTTP_201_CREATED,
@@ -68,14 +87,35 @@ class RegisterView(APIView):
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "auth-login"
 
     def post(self, request):
         enforce_csrf(request)
         serializer = LoginSerializer(data=request.data, context={"request": request})
-        serializer.is_valid(raise_exception=True)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except ValidationError:
+            record_event(
+                action="auth.login_failed",
+                record_type="user",
+                record_id=str(request.data.get("identifier", ""))[:255],
+                ip_address=client_ip(request),
+                device_identifier=client_device(request),
+            )
+            raise
         user = serializer.validated_data["user"]
         login(request, user, backend="accounts.backends.EmailOrPhoneBackend")
         get_token(request)
+        record_event(
+            action="auth.login_succeeded",
+            record_type="user",
+            record_id=user.pk,
+            actor=user,
+            actor_role=actor_role_for(user),
+            ip_address=client_ip(request),
+            device_identifier=client_device(request),
+        )
         return Response({"user": CurrentUserSerializer(user).data})
 
 
@@ -84,12 +124,25 @@ class LogoutView(APIView):
 
     def post(self, request):
         enforce_csrf(request)
+        user = request.user if request.user.is_authenticated else None
         logout(request)
+        if user is not None:
+            record_event(
+                action="auth.logout",
+                record_type="user",
+                record_id=user.pk,
+                actor=user,
+                actor_role=actor_role_for(user),
+                ip_address=client_ip(request),
+                device_identifier=client_device(request),
+            )
         return Response({"detail": "You have been signed out successfully."})
 
 
 class PasswordResetRequestView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "auth-reset"
 
     def post(self, request):
         enforce_csrf(request)
@@ -122,12 +175,24 @@ class PasswordResetRequestView(APIView):
                     "password_reset_email_failed",
                     extra={"user_id": str(user.pk)},
                 )
+            else:
+                record_event(
+                    action="auth.password_reset_requested",
+                    record_type="user",
+                    record_id=user.pk,
+                    actor=user,
+                    actor_role=actor_role_for(user),
+                    ip_address=client_ip(request),
+                    device_identifier=client_device(request),
+                )
 
         return Response(PASSWORD_RESET_RESPONSE)
 
 
 class PasswordResetConfirmView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "auth-reset"
 
     def post(self, request):
         enforce_csrf(request)
@@ -152,11 +217,22 @@ class PasswordResetConfirmView(APIView):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        record_event(
+            action="auth.password_reset_completed",
+            record_type="user",
+            record_id=user.pk,
+            actor=user,
+            actor_role=actor_role_for(user),
+            ip_address=client_ip(request),
+            device_identifier=client_device(request),
+        )
         return Response({"detail": "Your password has been reset successfully."})
 
 
 class EmailVerificationResendView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "auth-verify"
 
     def post(self, request):
         enforce_csrf(request)
@@ -196,12 +272,24 @@ class EmailVerificationResendView(APIView):
                     "email_verification_delivery_failed",
                     extra={"user_id": str(user.pk)},
                 )
+            else:
+                record_event(
+                    action="auth.email_verification_requested",
+                    record_type="user",
+                    record_id=user.pk,
+                    actor=user,
+                    actor_role=actor_role_for(user),
+                    ip_address=client_ip(request),
+                    device_identifier=client_device(request),
+                )
 
         return Response(EMAIL_VERIFICATION_RESPONSE)
 
 
 class EmailVerificationConfirmView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "auth-verify"
 
     def post(self, request):
         enforce_csrf(request)
@@ -233,6 +321,15 @@ class EmailVerificationConfirmView(APIView):
         if user.email_verified_at is None:
             user.email_verified_at = timezone.now()
             user.save(update_fields=["email_verified_at", "updated_at"])
+            record_event(
+                action="auth.email_verified",
+                record_type="user",
+                record_id=user.pk,
+                actor=user,
+                actor_role=actor_role_for(user),
+                ip_address=client_ip(request),
+                device_identifier=client_device(request),
+            )
 
         return Response(
             {

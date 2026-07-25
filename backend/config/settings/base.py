@@ -128,7 +128,7 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-MEDIA_URL = "media/"
+MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 AUTH_USER_MODEL = "accounts.User"
@@ -184,6 +184,10 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "anon": "100/minute",
         "user": "1000/minute",
+        "auth-register": "5/hour",
+        "auth-login": "10/minute",
+        "auth-verify": "5/hour",
+        "auth-reset": "5/hour",
     },
 }
 
