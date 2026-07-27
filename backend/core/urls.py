@@ -11,6 +11,7 @@ from .views import (
     PublicTestimonialListView,
     PublicWebsiteContentListView,
     health_check,
+    ping,
     report_client_error,
 )
 
@@ -18,6 +19,7 @@ from .views import (
 app_name = "core"
 
 urlpatterns = [
+    path("ping/", ping, name="ping"),
     path("health/", health_check, name="health-check"),
     path("client-errors/", report_client_error, name="client-error-report"),
     path("content/", PublicWebsiteContentListView.as_view(), name="public-content"),

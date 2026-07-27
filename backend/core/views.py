@@ -27,6 +27,19 @@ logger = logging.getLogger("golden_touch.health")
 
 @extend_schema(
     responses=inline_serializer(
+        name="PingResponse",
+        fields={"status": serializers.CharField()},
+    )
+)
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def ping(request):
+    """Lightweight availability probe that does not query the database."""
+    return Response({"status": "ok"})
+
+
+@extend_schema(
+    responses=inline_serializer(
         name="HealthResponse",
         fields={
             "application": serializers.CharField(),
