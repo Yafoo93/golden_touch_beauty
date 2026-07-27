@@ -17,6 +17,20 @@ type SignedInUser = {
   post_login_path: string | null;
 };
 
+function canUseRequestedPath(
+  user: SignedInUser,
+  path: string | null,
+): path is string {
+  if (!path?.startsWith("/") || path.startsWith("//")) return false;
+  if (path.startsWith("/management")) {
+    return user.portal_access.includes("management");
+  }
+  if (path.startsWith("/pos")) {
+    return user.portal_access.includes("pos");
+  }
+  return true;
+}
+
 export function LoginForm() {
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
@@ -39,11 +53,7 @@ export function LoginForm() {
         }),
       });
       const requestedPath = new URLSearchParams(window.location.search).get("next");
-      if (
-        !response.user.is_staff &&
-        requestedPath?.startsWith("/") &&
-        !requestedPath.startsWith("//")
-      ) {
+      if (canUseRequestedPath(response.user, requestedPath)) {
         window.location.replace(requestedPath);
         return;
       }

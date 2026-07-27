@@ -129,7 +129,7 @@ export function RegisterForm() {
       <div className="auth-form__consents">
         <label className="consent-field">
           <input type="checkbox" name="terms_privacy_agreed" checked={draft.terms_privacy_agreed} onChange={updateConsent} required />
-          <span>I agree to the <Link href="/policies#terms" target="_blank">Terms and Conditions</Link> and <Link href="/policies#privacy" target="_blank">Privacy Policy</Link>. <strong aria-hidden="true">*</strong></span>
+          <span>I agree to the <Link href="/terms" target="_blank">Terms and Conditions</Link> and <Link href="/privacy" target="_blank">Privacy Policy</Link>. <strong aria-hidden="true">*</strong></span>
         </label>
         {fieldErrors.terms_privacy_agreed ? <ValidationMessage>{fieldErrors.terms_privacy_agreed}</ValidationMessage> : null}
         <label className="consent-field">

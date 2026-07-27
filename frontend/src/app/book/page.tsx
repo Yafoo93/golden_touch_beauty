@@ -5,6 +5,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHero } from "@/components/ui/page-hero";
 import type { PaginatedResponse, PublicBranch } from "@/lib/branches";
+import { requireAuthenticated } from "@/lib/server-auth";
 import { getServiceCatalogue } from "@/lib/services";
 
 
@@ -33,6 +34,14 @@ export default async function BookPage({
   }>;
 }) {
   const params = await searchParams;
+  const returnQuery = new URLSearchParams();
+  if (params.branch) returnQuery.set("branch", params.branch);
+  if (params.step) returnQuery.set("step", params.step);
+  if (params.service) returnQuery.set("service", params.service);
+  if (params.services) returnQuery.set("services", params.services);
+  await requireAuthenticated(
+    `/book${returnQuery.size ? `?${returnQuery.toString()}` : ""}`,
+  );
   const branches = await getBranches();
   const selectedBranch = branches?.find(
     (branch) => branch.code === params.branch,

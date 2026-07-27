@@ -90,7 +90,7 @@ Expand the launched multi-branch platform with staff roles and assignment, advan
 
 - [ ] Convert the screenshots into documented design tokens: black/charcoal surfaces, gold accents, cream headings, muted text, borders, radii, spacing, shadows, and interaction states.
 - [ ] Select and license the heading and body fonts or choose production-safe alternatives.
-- [ ] Build responsive header, navigation, mobile menu, cart indicator, account control, and footer components.
+- [x] Build responsive header, navigation, mobile menu, cart indicator, account control, and footer components.
 - [ ] Build reusable buttons, links, cards, badges, form controls, dialogs, alerts, loaders, skeletons, empty states, and pagination.
 - [ ] Add accessible focus states, keyboard navigation, form labels, error summaries, and contrast checks.
 - [ ] Create responsive breakpoints and verify phone, tablet, laptop, and wide-desktop layouts.
@@ -120,7 +120,7 @@ Expand the launched multi-branch platform with staff roles and assignment, advan
 - [ ] Add login throttling, lockout/rate limits, and audit events.
 - [ ] Add customer profile read/update and saved delivery addresses.
 - [ ] Add consent capture for terms, privacy, and marketing.
-- [ ] Add account navigation and protected-route handling in Next.js.
+- [x] Add account navigation and protected-route handling in Next.js.
 - [ ] Add admin account management without exposing password hashes or sensitive treatment information.
 - [ ] Test registration, duplicate identities, login by both identifiers, inactive accounts, logout, and reset flows.
 
@@ -177,7 +177,7 @@ Expand the launched multi-branch platform with staff roles and assignment, advan
 - [ ] Block duplicate active bookings for the same customer and service.
 - [ ] Allow authorized override only with an audit reason.
 - [ ] Build the four-step booking UI from the supplied design.
-- [ ] Require authentication before final booking confirmation while preserving the customer's in-progress selection.
+- [x] Require authentication before final booking confirmation while preserving the customer's in-progress selection.
 - [ ] Add booking review, confirmation reference, receipt link, and failure/retry states.
 - [ ] Build customer views for upcoming, pending, changed, completed, cancelled, and no-show appointments.
 - [ ] Build admin views to create, review, approve, reject, reschedule, cancel, and record payment for appointments.

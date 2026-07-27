@@ -1,34 +1,69 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
-const makolaMapUrl =
-  "https://maps.google.com/maps?vet=10CAAQoqAOahcKEwj4mrSs7c-VAxUAAAAAHQAAAAAQIg..i&pvq=CgwvZy8xaGRfbDdmN2Q&fvr=1&cs=0&um=1&ie=UTF-8&fb=1&gl=gh&sa=X&ftid=0xfdf90bdedf8501b:0x52470e6bd2670358";
+import { apiFetch } from "@/lib/api";
+import {
+  formatBranchTime,
+  formatGhanaPhone,
+  formatOpeningDays,
+  whatsappUrl,
+} from "@/lib/branch-formatters";
+import type { PaginatedResponse, PublicBranch } from "@/lib/branches";
 
-const branches = [
+const fallbackBranches: PublicBranch[] = [
   {
+    id: "makola-fallback",
+    code: "makola",
     name: "Makola",
-    hours: "Monday - Saturday, 7:30 AM - 5:00 PM",
-    contacts: ["233241370429", "233257711182"],
-    mapUrl: makolaMapUrl,
+    address: "Makola, Accra",
+    telephone_number: "+233241370429",
+    secondary_telephone_number: "+233257711182",
+    whatsapp_number: "+233241370429",
+    secondary_whatsapp_number: "+233257711182",
+    email: "",
+    google_maps_url:
+      "https://maps.google.com/maps?vet=10CAAQoqAOahcKEwj4mrSs7c-VAxUAAAAAHQAAAAAQIg..i&pvq=CgwvZy8xaGRfbDdmN2Q&fvr=1&cs=0&um=1&ie=UTF-8&fb=1&gl=gh&sa=X&ftid=0xfdf90bdedf8501b:0x52470e6bd2670358",
+    opening_days: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"],
+    opening_time: "07:30:00",
+    closing_time: "17:00:00",
   },
   {
+    id: "tse-addo-fallback",
+    code: "tse-addo",
     name: "Tse Addo",
-    hours: "Monday - Saturday, 7:30 AM - 7:00 PM",
-    contacts: ["233241370429", "233207911043"],
-    mapUrl: null,
+    address: "Tse Addo, Accra",
+    telephone_number: "+233241370429",
+    secondary_telephone_number: "+233207911043",
+    whatsapp_number: "+233241370429",
+    secondary_whatsapp_number: "+233207911043",
+    email: "",
+    google_maps_url: "",
+    opening_days: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"],
+    opening_time: "07:30:00",
+    closing_time: "19:00:00",
   },
+];
+
+const explore = [
+  { href: "/about", label: "About us" },
+  { href: "/contact", label: "Contact and branches" },
+  { href: "/gallery", label: "Gallery" },
+  { href: "/bridal-packages", label: "Bridal packages" },
+  { href: "/testimonials", label: "Testimonials" },
+  { href: "/blog", label: "Beauty tips" },
+  { href: "/faq", label: "Frequently asked questions" },
 ];
 
 const policies = [
-  { href: "/policies/terms", label: "Terms of Use" },
-  { href: "/policies/privacy", label: "Privacy Policy" },
-  { href: "/policies/cancellations-refunds", label: "Cancellations & Refunds" },
-  { href: "/policies/delivery-returns", label: "Delivery & Returns" },
+  { href: "/terms", label: "Terms of Use" },
+  { href: "/privacy", label: "Privacy Policy" },
+  { href: "/cancellation-refunds", label: "Cancellations & Refunds" },
+  { href: "/delivery-returns", label: "Delivery & Returns" },
 ];
-
-function formatPhone(number: string) {
-  return `+${number.slice(0, 3)} ${number.slice(3, 6)} ${number.slice(6, 9)} ${number.slice(9)}`;
-}
 
 function PhoneIcon() {
   return (
@@ -57,6 +92,23 @@ function WhatsAppIcon() {
 }
 
 export function SiteFooter() {
+  const pathname = usePathname();
+  const [branches, setBranches] = useState(fallbackBranches);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiFetch<PaginatedResponse<PublicBranch>>("branches/")
+      .then((response) => {
+        if (!cancelled && response.results.length) setBranches(response.results);
+      })
+      .catch(() => {
+        // Keep the development fallback visible while Django wakes or is offline.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
+
   return (
     <footer className="site-footer">
       <div className="site-footer__inner">
@@ -101,30 +153,47 @@ export function SiteFooter() {
         </section>
 
         {branches.map((branch) => (
-          <section className="site-footer__branch" key={branch.name}>
+          <section className="site-footer__branch" key={branch.id}>
             <h2>{branch.name}</h2>
-            <p className="site-footer__hours">{branch.hours}</p>
+            <p className="site-footer__hours">
+              {formatOpeningDays(branch.opening_days)},{" "}
+              {formatBranchTime(branch.opening_time)} -{" "}
+              {formatBranchTime(branch.closing_time)}
+            </p>
             <ul>
-              {branch.contacts.map((contact) => (
-                <li key={contact}>
+              {[
+                {
+                  phone: branch.telephone_number,
+                  whatsapp: branch.whatsapp_number,
+                },
+                {
+                  phone: branch.secondary_telephone_number,
+                  whatsapp: branch.secondary_whatsapp_number,
+                },
+              ].filter((contact) => contact.phone).map((contact) => (
+                <li key={contact.phone}>
                   <PhoneIcon />
-                  <a href={`tel:+${contact}`}>{formatPhone(contact)}</a>
-                  <a
-                    className="site-footer__whatsapp-link"
-                    href={`https://wa.me/${contact}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label={`WhatsApp ${formatPhone(contact)}`}
-                  >
-                    WhatsApp
+                  <a href={`tel:${contact.phone}`}>
+                    {formatGhanaPhone(contact.phone)}
                   </a>
+                  {contact.whatsapp ? (
+                    <a
+                      className="site-footer__whatsapp-link"
+                      href={whatsappUrl(contact.whatsapp)}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`WhatsApp ${formatGhanaPhone(contact.whatsapp)}`}
+                    >
+                      WhatsApp
+                    </a>
+                  ) : null}
                 </li>
               ))}
             </ul>
-            {branch.mapUrl ? (
+            {branch.google_maps_url ? (
               <a
                 className="site-footer__map"
-                href={branch.mapUrl}
+                href={branch.google_maps_url}
                 target="_blank"
                 rel="noreferrer"
               >
@@ -139,6 +208,15 @@ export function SiteFooter() {
             )}
           </section>
         ))}
+
+        <nav className="site-footer__policies" aria-label="Explore">
+          <h2>Explore</h2>
+          {explore.map((item) => (
+            <Link href={item.href} key={item.href}>
+              {item.label}
+            </Link>
+          ))}
+        </nav>
 
         <nav className="site-footer__policies" aria-label="Policies">
           <h2>Policies</h2>

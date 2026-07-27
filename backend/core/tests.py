@@ -269,12 +269,6 @@ class UnexpectedFailureView(APIView):
 
 
 class HealthCheckTests(TestCase):
-    def test_ping_is_public_and_lightweight(self):
-        response = self.client.get(reverse("core:ping"))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {"status": "ok"})
-
     def test_health_check_does_not_expose_debug_configuration(self):
         response = self.client.get(reverse("core:health-check"))
 

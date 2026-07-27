@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AccountOrders } from "@/components/account/account-orders";
 import { ButtonLink } from "@/components/ui/button";
 import { AccountBookings } from "@/components/account/account-bookings";
 
@@ -17,15 +18,19 @@ export default function AccountPage() {
         <div>
           <p>Account dashboard</p>
           <h2>Welcome to Golden Touch</h2>
-          <span>Your appointments, orders, profile, receipts, and notifications will appear here as those customer modules are completed.</span>
+          <span>Review your booking requests and product orders, or continue shopping and managing saved products.</span>
         </div>
         <div className="account-landing__actions">
           <ButtonLink href="/book">Book an appointment</ButtonLink>
           <ButtonLink href="/shop" variant="outline">Browse products</ButtonLink>
+          <ButtonLink href="/wishlist" variant="outline">Wishlist</ButtonLink>
+          <ButtonLink href="/cart" variant="outline">Cart</ButtonLink>
+          <ButtonLink href="/contact" variant="outline">Contact a branch</ButtonLink>
           <ButtonLink href="/logout" variant="black">Sign out</ButtonLink>
         </div>
       </section>
       <AccountBookings />
+      <AccountOrders />
     </main>
   );
 }

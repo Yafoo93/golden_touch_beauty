@@ -10,6 +10,7 @@ import { CartItemCount } from "@/components/cart/cart-item-count";
 import { CartDrawer } from "@/components/cart/cart-drawer";
 import { ButtonLink } from "@/components/ui/button";
 import { useWishlist } from "@/components/wishlist/wishlist-context";
+import { ApiError, apiFetch } from "@/lib/api";
 
 const navigation = [
   { href: "/", label: "Home" },
@@ -48,10 +49,19 @@ function AccountIcon() {
   );
 }
 
+type CurrentUserResponse = {
+  user: {
+    portal_access: Array<"management" | "pos">;
+  };
+};
+
 export function SiteHeader() {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [portalAccess, setPortalAccess] = useState<
+    Array<"management" | "pos">
+  >([]);
   const closeCart = useCallback(() => setIsCartOpen(false), []);
   const { itemCount: cartItemCount } = useCartCount();
   const {
@@ -75,7 +85,33 @@ export function SiteHeader() {
     setIsCartOpen(false);
   }, [pathname]);
 
-  const isAuthenticated = authenticated === true;
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadPortalAccess() {
+      try {
+        const response = await apiFetch<CurrentUserResponse>("auth/me/");
+        if (!cancelled) setPortalAccess(response.user.portal_access);
+      } catch (error) {
+        if (
+          !cancelled &&
+          error instanceof ApiError &&
+          [401, 403].includes(error.status)
+        ) {
+          setPortalAccess([]);
+        }
+      }
+    }
+
+    void loadPortalAccess();
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
+
+  const isAuthenticated = authenticated === true || portalAccess.length > 0;
+  const hasManagementAccess = portalAccess.includes("management");
+  const hasPosAccess = portalAccess.includes("pos");
   const accountHref = isAuthenticated ? "/account" : "/login";
   const accountLabel = isAuthenticated ? "Account" : "Login";
 
@@ -127,6 +163,24 @@ export function SiteHeader() {
         </nav>
 
         <div className="header-actions">
+          {hasManagementAccess ? (
+            <Link
+              className="management-link"
+              href="/management"
+              aria-current={pathname.startsWith("/management") ? "page" : undefined}
+            >
+              Management
+            </Link>
+          ) : null}
+          {hasPosAccess ? (
+            <Link
+              className="management-link"
+              href="/pos"
+              aria-current={pathname.startsWith("/pos") ? "page" : undefined}
+            >
+              POS
+            </Link>
+          ) : null}
           <Link
             className="wishlist-link"
             href={
@@ -203,6 +257,28 @@ export function SiteHeader() {
                 </Link>
               );
             })}
+            {hasManagementAccess ? (
+              <Link
+                className="mobile-nav__link"
+                href="/management"
+                aria-current={
+                  pathname.startsWith("/management") ? "page" : undefined
+                }
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Management portal
+              </Link>
+            ) : null}
+            {hasPosAccess ? (
+              <Link
+                className="mobile-nav__link"
+                href="/pos"
+                aria-current={pathname.startsWith("/pos") ? "page" : undefined}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Point of sale
+              </Link>
+            ) : null}
             <Link
               className="mobile-nav__link"
               href={

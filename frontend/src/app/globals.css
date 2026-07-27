@@ -129,7 +129,8 @@ html {
   transform: scaleX(1);
 }
 
-.account-link {
+.account-link,
+.management-link {
   border: 1px solid var(--gold-border);
   border-radius: 0.4rem;
   text-decoration: none;
@@ -330,7 +331,20 @@ html {
   transition: border-color 160ms ease, background 160ms ease;
 }
 
-.account-link:hover {
+.management-link {
+  min-height: 2.7rem;
+  padding: 0.55rem 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  color: var(--gold-light);
+  font-size: 0.9rem;
+  font-weight: 700;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.account-link:hover,
+.management-link:hover,
+.management-link[aria-current="page"] {
   border-color: var(--gold);
   background: #18150e;
 }
@@ -424,6 +438,48 @@ html {
   margin-top: 1rem;
 }
 
+.portal-navigation {
+  position: sticky;
+  z-index: 40;
+  top: var(--header-height);
+  border-bottom: 1px solid rgba(223, 168, 36, 0.2);
+  background: rgba(13, 13, 13, 0.98);
+}
+
+.portal-navigation__inner {
+  width: min(calc(100% - 3rem), 92rem);
+  min-height: 3.5rem;
+  margin-inline: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  overflow-x: auto;
+}
+
+.portal-navigation a {
+  min-height: 3.5rem;
+  padding-inline: 0.8rem;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  border-bottom: 2px solid transparent;
+  color: #aaa49a;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.portal-navigation a:hover,
+.portal-navigation a[aria-current="page"] {
+  border-bottom-color: var(--gold);
+  color: var(--gold-light);
+}
+
+.portal-navigation__spacer {
+  min-width: 1rem;
+  flex: 1;
+}
+
 .brand:focus-visible,
 .primary-nav a:focus-visible,
 .header-actions a:focus-visible {
@@ -447,8 +503,9 @@ html {
     display: none;
   }
 
-  .header-actions > .wishlist-link,
-  .header-actions > .account-link {
+.header-actions > .wishlist-link,
+  .header-actions > .account-link,
+  .header-actions > .management-link {
     display: none;
   }
 
@@ -496,7 +553,7 @@ html {
   margin-inline: auto;
   padding-block: clamp(2.75rem, 5vw, 4.5rem);
   display: grid;
-  grid-template-columns: 1.2fr repeat(3, 1fr);
+  grid-template-columns: 1.2fr repeat(4, 1fr);
   gap: 0;
 }
 
@@ -3560,6 +3617,10 @@ html {
 }
 
 @media (max-width: 48rem) {
+  .portal-navigation__inner {
+    width: calc(100% - 1rem);
+  }
+
   .faq-group {
     grid-template-columns: 1fr;
     gap: 1rem;

@@ -302,7 +302,7 @@ Native mobile apps, automated WhatsApp API messaging, barcodes, supplier/purchas
 
 The release will be considered functionally complete when it satisfies the PRD's 40 acceptance criteria, summarized as follows:
 
-- [ ] Public visitors can browse services and products; authentication gates booking and purchasing.
+- [x] Public visitors can browse services and products; authentication gates booking and purchasing.
 - [ ] Customers can register and log in with email or phone credentials.
 - [ ] A booking can contain multiple services and target Makola or Tse Addo.
 - [ ] Customers can request preferred times and choose Pay at Clinic.
