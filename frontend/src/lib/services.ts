@@ -1,4 +1,5 @@
 import type { ServiceCardProps } from "@/components/catalogue/service-card";
+import { fetchBackendJson } from "@/lib/backend-fetch";
 import type { PublicBranch } from "@/lib/branches";
 
 export type ServiceCategory = { name: string; slug: string };
@@ -54,20 +55,6 @@ function apiUrl(path: string) {
   return `${base}/api/v1/services/${path}`;
 }
 
-async function fetchJson<T>(url: string): Promise<T | null> {
-  try {
-    const response = await fetch(url, {
-      cache: "no-store",
-      headers: { Accept: "application/json" },
-      signal: AbortSignal.timeout(10_000),
-    });
-    if (!response.ok) return null;
-    return (await response.json()) as T;
-  } catch {
-    return null;
-  }
-}
-
 export async function getServiceCatalogue(filters: {
   category?: string;
   search?: string;
@@ -78,10 +65,10 @@ export async function getServiceCatalogue(filters: {
   if (filters.search) query.set("search", filters.search);
   if (filters.branch) query.set("branch", filters.branch);
   const [services, categories] = await Promise.all([
-    fetchJson<ServiceResponse[]>(
+    fetchBackendJson<ServiceResponse[]>(
       apiUrl(`${query.size ? `?${query.toString()}` : ""}`),
     ),
-    fetchJson<ServiceCategory[]>(apiUrl("categories/")),
+    fetchBackendJson<ServiceCategory[]>(apiUrl("categories/")),
   ]);
 
   return {
@@ -115,7 +102,7 @@ export async function getServiceCatalogue(filters: {
 export async function getServiceDetail(
   slug: string,
 ): Promise<ServiceDetail | null> {
-  return fetchJson<ServiceDetail>(
+  return fetchBackendJson<ServiceDetail>(
     apiUrl(`${encodeURIComponent(slug)}/`),
   );
 }

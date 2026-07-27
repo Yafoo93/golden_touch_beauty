@@ -1,4 +1,5 @@
 import type { ProductCardProps } from "@/components/catalogue/product-card";
+import { fetchBackendJson } from "@/lib/backend-fetch";
 
 export type ProductCategory = { name: string; slug: string };
 export type ProductAvailability = "" | "in_stock" | "preorder" | "out_of_stock";
@@ -80,20 +81,6 @@ function apiUrl(path: string) {
   return `${base}/api/v1/products/${path}`;
 }
 
-async function fetchJson<T>(url: string): Promise<T | null> {
-  try {
-    const response = await fetch(url, {
-      cache: "no-store",
-      headers: { Accept: "application/json" },
-      signal: AbortSignal.timeout(10_000),
-    });
-    if (!response.ok) return null;
-    return (await response.json()) as T;
-  } catch {
-    return null;
-  }
-}
-
 export async function getProductCatalogue(filters: {
   category?: string;
   search?: string;
@@ -104,10 +91,10 @@ export async function getProductCatalogue(filters: {
   if (filters.search) query.set("search", filters.search);
   if (filters.availability) query.set("availability", filters.availability);
   const [products, categories] = await Promise.all([
-    fetchJson<PublicProductSummary[]>(
+    fetchBackendJson<PublicProductSummary[]>(
       apiUrl(query.size ? `?${query.toString()}` : ""),
     ),
-    fetchJson<ProductCategory[]>(apiUrl("categories/")),
+    fetchBackendJson<ProductCategory[]>(apiUrl("categories/")),
   ]);
 
   return {
@@ -122,5 +109,7 @@ export async function getProductCatalogue(filters: {
 export async function getProductDetail(
   slug: string,
 ): Promise<ProductDetail | null> {
-  return fetchJson<ProductDetail>(apiUrl(`${encodeURIComponent(slug)}/`));
+  return fetchBackendJson<ProductDetail>(
+    apiUrl(`${encodeURIComponent(slug)}/`),
+  );
 }

@@ -1,5 +1,6 @@
 import type { ProductCardProps } from "@/components/catalogue/product-card";
 import type { ServiceCardProps } from "@/components/catalogue/service-card";
+import { fetchBackendJson } from "@/lib/backend-fetch";
 
 type FeaturedServiceResponse = {
   name: string;
@@ -38,18 +39,10 @@ function apiUrl(path: string) {
 }
 
 async function fetchPublicList<T>(path: string): Promise<FeaturedCatalogueResult<T>> {
-  try {
-    const response = await fetch(apiUrl(path), {
-      headers: { Accept: "application/json" },
-      next: { revalidate: 60 },
-    });
-    if (!response.ok) {
-      return { items: [], unavailable: true };
-    }
-    return { items: (await response.json()) as T[], unavailable: false };
-  } catch {
-    return { items: [], unavailable: true };
-  }
+  const items = await fetchBackendJson<T[]>(apiUrl(path));
+  return items === null
+    ? { items: [], unavailable: true }
+    : { items, unavailable: false };
 }
 
 export async function getFeaturedServices(): Promise<
