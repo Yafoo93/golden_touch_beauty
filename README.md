@@ -1,392 +1,928 @@
-# Golden Touch Beauty Centre
+# Golden Touch Beauty Centre Management Platform
 
 <p align="center">
   <img src="docs/logo.png" alt="Golden Touch Beauty Centre logo" width="220">
 </p>
 
 <p align="center">
-  <strong>Where Beauty Meets Excellence</strong><br>
-  A planned multi-branch platform for beauty services, bookings, e-commerce, point of sale, inventory, customer care, and business analytics.
+  <strong>Where Beauty Meets Excellence</strong>
 </p>
 
+<p align="center">
+  A multi-branch beauty business management platform for appointments, e-commerce, point of sale, inventory, customer care, treatment records, payments, and business analytics.
+</p>
+
+---
+
 > [!IMPORTANT]
-> This repository is currently in the **foundation stage**. It contains the Product Requirements Document (PRD), brand assets, and an initial Django backend scaffold. Most business features described below are not yet implemented and represent the approved target scope unless marked as a later-phase item.
+> This project is currently in the **foundation and early implementation stage**.
+>
+> The repository contains the approved Product Requirements Document, brand assets, Django backend foundations, database structure, API documentation, development seed data, and frontend scaffolding.
+>
+> Most customer-facing and operational workflows described in this README remain under development unless explicitly marked as implemented.
 
-## Table of contents
-
-- [Overview](#overview)
-- [Project status](#project-status)
-- [Business context](#business-context)
-- [Product goals](#product-goals)
-- [Phase 1 scope](#phase-1-scope)
-- [Users and access](#users-and-access)
-- [Core workflows and rules](#core-workflows-and-rules)
-- [Reporting and administration](#reporting-and-administration)
-- [Security, privacy, and auditability](#security-privacy-and-auditability)
-- [Proposed technical architecture](#proposed-technical-architecture)
-- [Core domain model](#core-domain-model)
-- [Roadmap](#roadmap)
-- [Phase 1 acceptance criteria](#phase-1-acceptance-criteria)
-- [Delivery dependencies and risks](#delivery-dependencies-and-risks)
-- [Repository structure](#repository-structure)
-- [Getting started](#getting-started)
-- [Documentation](#documentation)
+---
 
 ## Overview
 
-Golden Touch Beauty Centre needs a single, responsive business-management platform that connects its customer-facing website with day-to-day branch operations. The platform will allow customers to discover services, book appointments, request home services, shop for products, make payments, and track their activity. Staff and management will use the same central system to handle bookings, sales, stock, treatment records, expenses, approvals, and reporting.
+The **Golden Touch Beauty Centre Management Platform** is a planned digital system designed to connect the company's public website with its daily business operations.
 
-The initial rollout covers the **Makola** and **Tse Addo** branches in Accra, Ghana. Multi-branch support is a foundational requirement: every operational record must carry a branch identifier, while the owner retains a consolidated view across the business.
+Customers will be able to:
 
-The primary language is English and the primary currency is Ghana cedis (GHS).
+* Browse beauty services
+* Book appointments
+* Request home services
+* Pay for consultations
+* Buy beauty products
+* Track orders
+* View receipts
+* Manage treatment and purchase history
+* Save favourite products and services
 
-## Project status
+Staff and management will be able to:
 
-| Area | Status |
-| --- | --- |
-| Product requirements | Drafted (PRD v1.0, 20 July 2026) |
-| Brand asset | Available |
-| UX/UI design | Not started |
-| Application architecture | Django/PostgreSQL backend with environment-specific settings and Next.js frontend foundation |
-| Backend | Modular apps, custom user model, branch/audit/idempotency foundations, API docs, and health endpoint |
-| Web frontend | Next.js scaffold and approved visual reference; product UI implementation not started |
-| POS | Planned for Phase 1; implementation not started |
-| Payment provider | To be selected during implementation |
-| Deployment environment | Not configured |
+* Manage bookings
+* Process sales
+* Operate a point-of-sale system
+* Monitor stock
+* Record treatment information
+* Manage expenses
+* Approve content
+* Review payments
+* Generate business reports
+* Compare branch performance
+* Maintain audit records
 
-The PRD describes a proposed four-week Phase 1 delivery plan, but also notes that the schedule depends on strict scope control, prompt content delivery, payment-provider onboarding, and parallel work by an experienced team.
+The initial deployment covers the **Makola** and **Tse Addo** branches in Accra, Ghana.
 
-## Business context
+The platform is designed to support additional branches without requiring a major redesign.
 
-### Initial branches
+---
 
-| Branch | Address | Operating hours |
-| --- | --- | --- |
-| Makola | Makola Shopping Mall, Shop 143, Second Floor, Accra, Ghana | Monday–Saturday, 7:30 a.m.–5:00 p.m. |
-| Tse Addo | Tse Addo, opposite The Royal Stool Event, Accra, Ghana | Monday–Saturday, 7:30 a.m.–7:00 p.m. |
+## Business Problem
 
-The data model must support additional branches without redesign. Services can be enabled per branch, stock is held separately per branch, and Phase 1 uses consistent product selling prices across branches.
+Golden Touch Beauty Centre currently requires a single source of truth for its customer-facing and internal business operations.
 
-### Brand and experience
+Without an integrated platform, beauty businesses may experience:
 
-- Primary palette: gold, white, and black.
-- Style: luxurious, modern, glamorous, and consistent.
-- Customer interfaces: responsive, mobile-friendly, accessible, and understandable to users with limited technical experience.
-- Management interfaces: optimized for clarity, speed, and operational efficiency.
-- Supported form factors: desktop, tablet, and mobile browsers, with an offline-capable desktop POS.
+* Appointment conflicts
+* Duplicate bookings
+* Inaccurate stock records
+* Difficulty tracking products used during treatments
+* Limited visibility across multiple branches
+* Inconsistent customer records
+* Manual sales and expense reporting
+* Difficulty monitoring outstanding balances
+* Weak auditability
+* Limited customer retention information
+* Delays in producing business reports
 
-## Product goals
+This platform addresses those challenges by connecting bookings, customers, sales, payments, stock, treatment records, branches, staff actions, and reports within one system.
 
-- Replace manual appointment, sales, and inventory processes with one source of truth.
-- Let customers browse, book, shop, pay, track orders, and manage their history online.
-- Prevent duplicate active bookings for the same customer and service.
-- Track sales, appointments, stock movements, expenses, and staff actions by branch.
-- Reduce stock losses and capture products consumed during treatments.
-- Support clinic services, consultations, home services, bridal groups, and international special-event requests.
-- Improve customer retention through treatment history, purchase history, reminders, and analytics.
-- Provide reliable daily, weekly, monthly, and branch-comparison reporting.
-- Preserve a complete audit trail and restrict sensitive treatment information.
-- Scale to new branches, staff, services, products, and integrations.
+---
 
-## Phase 1 scope
+## Project Goals
 
-### Public website
+The project aims to:
 
-The public site will include Home, About, Services, Service Details, Appointment Booking, Home-Service Requests, Consultation, Shop, Product Details, Cart, Checkout, Gallery, Bridal Packages, Testimonials, Beauty Tips/Blog, Contact, FAQs, policies, Login, and Registration.
+* Replace manual appointment, sales, and inventory processes
+* Provide one central system for multiple branches
+* Improve customer booking and shopping experiences
+* Prevent duplicate active bookings
+* Track sales, stock, expenses, and appointments by branch
+* Reduce stock loss
+* Record products consumed during treatments
+* Support clinic, consultation, home-service, and bridal workflows
+* Improve customer retention
+* Protect sensitive treatment information
+* Generate reliable daily, weekly, monthly, and branch-level reports
+* Preserve a complete audit trail
+* Scale to additional branches, services, products, and integrations
 
-Visitors can browse without an account but must register or log in before booking, purchasing, saving favorites, or reviewing. The contact page will show both branches together, and enquiry actions will open WhatsApp with a pre-filled message.
+---
 
-### Customer account
+## Current Project Status
 
-Customers can authenticate with either email/password or phone/password. Their dashboard is expected to provide:
+| Area                          | Status                 |
+| ----------------------------- | ---------------------- |
+| Product Requirements Document | Drafted                |
+| Brand identity and logo       | Available              |
+| Backend architecture          | Foundation implemented |
+| Django project configuration  | Implemented            |
+| Custom user model             | Implemented            |
+| Branch foundations            | Implemented            |
+| Audit foundations             | Implemented            |
+| Idempotency foundations       | Implemented            |
+| API health endpoint           | Implemented            |
+| API documentation             | Implemented            |
+| Development seed data         | Implemented            |
+| Next.js frontend scaffold     | Implemented            |
+| Customer-facing website       | Not yet implemented    |
+| Appointment workflows         | Not yet implemented    |
+| Online shop                   | Not yet implemented    |
+| Point of sale                 | Not yet implemented    |
+| Inventory workflows           | Not yet implemented    |
+| Payment provider              | Not yet selected       |
+| Production deployment         | Not configured         |
 
-- Upcoming, pending, changed, and historical appointments.
-- Relevant treatment history and consent controls.
-- Product orders, tracking, receipts, and outstanding balances.
-- Wishlist, saved addresses, purchase history, and reordering.
-- Marketing and before/after photograph consent settings.
+---
 
-### Services, bookings, and consultations
+## Initial Branches
 
-- A service catalogue with categories, descriptions, imagery, duration, branch availability, eligibility, approval state, and flexible pricing.
-- Fixed prices, starting prices, ranges, selectable price options, and management quotations.
-- Multi-service bookings under one reference while retaining separate service duration, pricing, assignment, and treatment data.
-- Clinic appointments, consultations, home-service requests, group bookings, and bookings made for another recipient.
-- Management approval, rejection, rescheduling, branch transfer, staff assignment, check-in, in-progress, completion, cancellation, and no-show handling.
-- Packages such as bridal packages, facial bundles, hair-and-makeup combinations, group packages, and manually renewed monthly beauty plans.
+| Branch   | Address                                                    | Operating Hours                      |
+| -------- | ---------------------------------------------------------- | ------------------------------------ |
+| Makola   | Makola Shopping Mall, Shop 143, Second Floor, Accra, Ghana | Monday–Saturday, 7:30 a.m.–5:00 p.m. |
+| Tse Addo | Tse Addo, opposite The Royal Stool Event, Accra, Ghana     | Monday–Saturday, 7:30 a.m.–7:00 p.m. |
 
-### Online shop
+Every operational record in the system must be associated with a branch where applicable.
 
-- Product catalogue, categories, search, filters, variants, wishlist, cart, checkout, and verified reviews.
-- Delivery and billing addresses, clinic pickup, paid delivery orders, order tracking, and reordering.
-- Manual delivery quotations for local or worldwide delivery.
-- Full-payment preorders with an estimated availability date and customer notifications.
-- Management-approved returns requested within 14 days, subject to product-condition and hygiene rules.
-- No cash on delivery in Phase 1.
+The owner will retain a consolidated cross-branch view.
 
-### Payments, receipts, and POS
+---
 
-- Mobile Money, bank transfer, cash at clinic, online payments, deposits, partial payments, and POS split payments.
-- Bank-transfer proof upload and management review.
-- Payment allocations that link amounts to bookings, orders, or sales and preserve outstanding balances.
-- Printable, downloadable, emailable, and WhatsApp-shareable receipts.
-- Product, service, and combined POS sales, including walk-in customers.
-- Permission-controlled discounts, refunds, price changes, complimentary services, cancellations, and reversals.
-- Offline desktop POS with a local transaction queue, automatic synchronization, temporary-to-official reference linking, and conflict alerts.
+## Brand Direction
 
-### Inventory
+* **Primary colours:** Gold, white, and black
+* **Style:** Luxurious, modern, glamorous, and professional
+* **Primary currency:** Ghana cedis (GHS)
+* **Primary language:** English
+* **Supported devices:** Desktop, tablet, and mobile browsers
+* **POS requirement:** Offline-capable desktop operation
 
-- Stock balances, reorder levels, batches, and expiry dates per branch.
-- Stock receipts, sales, treatment consumption, transfers, damage, expiry, loss, returns, adjustments, counts, and preorder allocation.
-- Whole-unit treatment consumption and optional service recipes in Phase 1.
-- Physical count sessions with variance review and approval.
-- Low-stock, out-of-stock, expiry, and preorder-availability alerts.
-- Branch-aware product reservations during online checkout.
+Customer-facing interfaces should remain simple and accessible to users with limited technical experience.
 
-### Management operations
+Management interfaces should prioritise speed, clarity, and operational efficiency.
 
-- Multi-branch administration and configurable role-based permissions.
-- Customer profiles and access-controlled treatment records.
-- Home-service and delivery quotation management.
-- Expense entry for a branch or the whole business.
-- Product, service, gallery, package, pricing, opening-hour, and contact-content management with owner approval before publication.
-- Management dashboards, exports, notifications, and audit logs.
+---
 
-## Users and access
+## Phase 1 Scope
 
-| User type | Intended access |
-| --- | --- |
-| Public visitor | Browse public content; authentication required for transactions and reviews. |
-| Registered customer | Manage profile, bookings, payments, orders, receipts, wishlist, consent, and eligible reviews. |
-| Owner / Super Administrator | Full cross-branch access, approvals, permissions, sensitive records, financials, reports, and audit logs. |
-| Branch manager | Operate assigned branches, appointments, treatment records, stock, expenses, transfers, quotations, and content. |
-| Receptionist | Register walk-ins, manage bookings and check-ins, record permitted payments, and print receipts; no sensitive medical or profit access. |
-| Sales attendant / Cashier | Process sales and payments, print receipts, and view permitted sales data. |
-| Stock manager | Manage inventory, receipts, transfers, losses, expiry, counts, and treatment consumption. |
-| Service provider | View assigned appointments, update service status and permitted notes, and record products used. |
+### Public Website
 
-Roles are configurable. A staff member may hold multiple roles and belong to one or more branches. Individual permissions can be granted or revoked, with sensitive access and permission changes recorded in the audit log.
+The public website will include:
 
-## Core workflows and rules
+* Home
+* About
+* Services
+* Service details
+* Appointment booking
+* Home-service requests
+* Consultation
+* Online shop
+* Product details
+* Cart
+* Checkout
+* Gallery
+* Bridal packages
+* Testimonials
+* Beauty tips and blog
+* Contact
+* FAQs
+* Policies
+* Login
+* Registration
 
-### Clinic booking
+Visitors may browse without an account.
 
-1. The customer selects one or more services, a branch, and a preferred date and time.
-2. The customer supplies relevant treatment and recipient information and chooses a payment method.
-3. The platform creates a booking reference and notifies the customer and management.
-4. Management approves, rejects, moves, or proposes a new time or branch.
-5. If management proposes a change, the customer must accept it before confirmation.
-6. Staff check in the customer, deliver each service, record treatment details and products used, and complete the appointment.
+Authentication will be required before users can:
 
-Times are requested in 30-minute intervals within branch opening hours. A booking that may finish after closing produces a management warning rather than being rejected automatically. Authorized managers can block periods for holidays, meetings, events, maintenance, or capacity constraints.
+* Book appointments
+* Purchase products
+* Save favourites
+* Submit reviews
+* Manage account information
 
-Duplicate active bookings for the same customer and service are blocked while the earlier booking is Pending, Confirmed, Checked in, In progress, or Rescheduled awaiting acceptance. An authorized override requires a reason and audit entry.
+---
 
-### Booking and payment states
+## Customer Account
 
-Public booking statuses are **Pending**, **Confirmed**, **Checked in**, **In progress**, **Completed**, **Cancelled**, **Rescheduled**, and **No-show**. Internal indicators can additionally represent payment review, proposed time changes, quotation review, or transfer verification.
+Customers will be able to manage:
 
-- Verified full online payment: confirmed, subject to any accepted time change.
-- Deposit: confirmed with the outstanding balance retained.
-- Pay at Clinic: pending until management confirms or proposes a time.
-- Consultation: confirmed only after the separate, non-refundable **GHS 200** fee is paid.
+* Personal profile
+* Upcoming appointments
+* Pending appointments
+* Rescheduled appointments
+* Appointment history
+* Treatment history
+* Consent preferences
+* Product orders
+* Delivery tracking
+* Receipts
+* Outstanding balances
+* Wishlist
+* Saved addresses
+* Purchase history
+* Reordering
+* Before-and-after photograph consent
+* Marketing consent
 
-### Home service
+---
 
-The customer selects eligible services and submits the destination, map location, contact, group size, event, preferred schedule, and travel details. Management assigns a branch, assesses staffing and travel, sends a complete quotation, and approves only after customer acceptance and full payment. Phase 1 clinic-only treatments must not be offered as home services. International home service is intended for bridal or special events.
+## Services and Appointment Management
 
-### Checkout and stock reservation
+The platform will support:
 
-Available stock is reserved for **30 minutes** while checkout is in progress. Successful payment converts the reservation into a deduction; failed, expired, or abandoned checkout releases it. Delivery orders are fulfilled from a branch with sufficient available stock, while clinic pickup only offers adequately stocked branches.
+* Service categories
+* Service descriptions
+* Service images
+* Service duration
+* Branch availability
+* Customer eligibility requirements
+* Service approval status
+* Fixed prices
+* Starting prices
+* Price ranges
+* Selectable pricing options
+* Management quotations
 
-### Completed-sale corrections
+A single booking may contain multiple services while preserving separate:
 
-Completed sales are immutable. A correction requires an authorized cancellation or reversal, a reason, a linked replacement sale where relevant, and a complete audit trail.
+* Durations
+* Prices
+* Assigned staff
+* Treatment information
+* Service statuses
 
-### Offline POS synchronization
+### Supported Appointment Types
 
-Each desktop POS is permanently associated with a branch, device identifier, and authorized user session. Offline transactions keep temporary references and sync automatically when connectivity returns. The server assigns official references, updates stock, links both references, and flags conflicts for management review.
+* Clinic appointments
+* Consultations
+* Home-service requests
+* Group bookings
+* Bridal bookings
+* Bookings made for another person
+* Special-event services
+* International home-service requests
 
-## Reporting and administration
+### Appointment Management Actions
 
-The management dashboard will surface appointments, booking changes, home-service requests, sales, product and service revenue, balances, online orders, delivery quotations, low/expiring stock, expenses, pending reviews, trends, branch comparisons, and payment-method analysis.
+Authorised staff will be able to:
 
-Reports cover sales, revenue, appointments, cancellations, no-shows, popular services, best-selling products, staff sales, retention, inventory, expiry, expenses, product gross profit, payments, branch comparison, home services, online orders, and consultations. Exports are required in **PDF, Excel, and CSV**.
+* Approve appointments
+* Reject appointments
+* Propose new appointment times
+* Reschedule appointments
+* Transfer appointments between branches
+* Assign staff
+* Check in customers
+* Mark services in progress
+* Complete appointments
+* Cancel appointments
+* Mark no-shows
 
-Customer-retention metrics include new and returning customers, repeat bookings and purchases, inactivity, abandoned carts, cancellations, repeated no-shows, favorite services, and customer lifetime sales value.
+---
 
-Phase 1 financial reporting uses:
+## Duplicate Booking Prevention
+
+The system should prevent duplicate active bookings for the same customer and service when an earlier booking is:
+
+* Pending
+* Confirmed
+* Checked in
+* In progress
+* Rescheduled and awaiting acceptance
+
+An authorised manager may override this restriction only after providing a reason.
+
+The override must be recorded in the audit log.
+
+---
+
+## Consultation Rules
+
+Consultations require a separate non-refundable payment of:
+
+**GHS 200**
+
+A consultation is confirmed only after payment has been verified.
+
+---
+
+## Home-Service Workflow
+
+1. Customer selects eligible services.
+2. Customer provides the destination and map location.
+3. Customer provides contact details and group size.
+4. Customer specifies the event and preferred schedule.
+5. Customer provides relevant travel details.
+6. Management assigns a branch.
+7. Management assesses staffing and travel requirements.
+8. Management prepares a complete quotation.
+9. Customer accepts the quotation.
+10. Customer makes full payment.
+11. Management confirms the home service.
+
+Clinic-only treatments must not be offered as home services during Phase 1.
+
+International home services are intended primarily for bridal and special events.
+
+---
+
+## Online Shop
+
+The e-commerce platform will support:
+
+* Product categories
+* Product search
+* Filters
+* Product variants
+* Product images
+* Wishlist
+* Cart
+* Checkout
+* Verified customer reviews
+* Delivery addresses
+* Billing addresses
+* Clinic pickup
+* Delivery orders
+* Order tracking
+* Reordering
+* Preorders
+* Return requests
+
+### Preorders
+
+Preorders require full payment.
+
+The customer must be shown an estimated availability date and receive status notifications.
+
+### Returns
+
+Returns must:
+
+* Be requested within 14 days
+* Receive management approval
+* Meet applicable hygiene and product-condition requirements
+
+Cash on delivery is not included in Phase 1.
+
+---
+
+## Checkout and Stock Reservation
+
+Available stock will be reserved for **30 minutes** while checkout is in progress.
+
+* Successful payment converts the reservation into a stock deduction.
+* Failed payment releases the reservation.
+* Expired checkout releases the reservation.
+* Abandoned checkout releases the reservation.
+
+Delivery orders should be fulfilled from a branch with sufficient available stock.
+
+Clinic pickup should only display branches with adequate stock.
+
+---
+
+## Payments
+
+The platform will support:
+
+* Mobile Money
+* Bank transfer
+* Online card payments
+* Cash at clinic
+* Deposits
+* Partial payments
+* Split payments
+* POS payments
+
+Bank-transfer customers may upload proof of payment for management review.
+
+Payments should be allocated to:
+
+* Appointments
+* Orders
+* Sales
+* Consultations
+* Home-service quotations
+
+The system must preserve any outstanding balance.
+
+---
+
+## Receipts
+
+Receipts should be:
+
+* Printable
+* Downloadable
+* Emailed
+* Shareable through WhatsApp
+
+Receipts should clearly identify:
+
+* Customer
+* Branch
+* Items or services
+* Payment method
+* Amount paid
+* Outstanding balance
+* Date
+* Cashier or responsible staff member
+* Transaction reference
+
+---
+
+## Point of Sale
+
+The POS system will support:
+
+* Product sales
+* Service sales
+* Combined sales
+* Walk-in customers
+* Split payments
+* Deposits
+* Partial payments
+* Discount controls
+* Refunds
+* Price changes
+* Complimentary services
+* Cancellations
+* Reversals
+
+Permission-controlled actions must require authorised access.
+
+---
+
+## Offline POS
+
+Each desktop POS installation will be associated with:
+
+* A branch
+* A device identifier
+* An authorised user session
+
+Offline transactions will receive temporary references.
+
+When connectivity is restored:
+
+1. The transaction is submitted to the server.
+2. The server validates the transaction.
+3. An official transaction reference is created.
+4. Stock is updated.
+5. Temporary and official references are linked.
+6. Conflicts are flagged for management review.
+
+---
+
+## Inventory Management
+
+The system will maintain inventory separately for each branch.
+
+Inventory features will include:
+
+* Current stock balances
+* Reorder levels
+* Product batches
+* Expiry dates
+* Stock receipts
+* Sales deductions
+* Treatment consumption
+* Branch transfers
+* Damaged stock
+* Expired stock
+* Lost stock
+* Returned stock
+* Stock adjustments
+* Physical stock counts
+* Preorder allocation
+
+### Inventory Alerts
+
+The platform will generate alerts for:
+
+* Low stock
+* Out-of-stock items
+* Expiring products
+* Expired products
+* Available preorder stock
+* Stock-count variances
+
+---
+
+## Treatment Consumption
+
+Products used during treatments should be recorded against:
+
+* The service
+* The appointment
+* The customer
+* The responsible staff member
+* The branch
+
+Phase 1 will support whole-unit treatment consumption and optional service recipes.
+
+More detailed quantity measurements may be introduced later.
+
+---
+
+## Users and Permissions
+
+| User Type                   | Main Access                                                                               |
+| --------------------------- | ----------------------------------------------------------------------------------------- |
+| Public visitor              | Browse public content                                                                     |
+| Registered customer         | Manage bookings, purchases, payments, receipts, wishlist, addresses, reviews, and consent |
+| Owner / Super Administrator | Full cross-branch access                                                                  |
+| Branch manager              | Operate assigned branches                                                                 |
+| Receptionist                | Manage bookings, check-ins, walk-ins, permitted payments, and receipts                    |
+| Sales attendant / Cashier   | Process sales and payments                                                                |
+| Stock manager               | Manage stock, transfers, losses, expiry, and counts                                       |
+| Service provider            | View assigned appointments and record permitted treatment information                     |
+
+A staff member may:
+
+* Hold multiple roles
+* Work at one or more branches
+* Receive individual permissions
+* Have individual permissions revoked
+
+Sensitive access and permission changes must be recorded in the audit log.
+
+---
+
+## Booking Statuses
+
+Public booking statuses include:
+
+* Pending
+* Confirmed
+* Checked in
+* In progress
+* Completed
+* Cancelled
+* Rescheduled
+* No-show
+
+Internal indicators may also represent:
+
+* Payment review
+* Proposed time changes
+* Quotation review
+* Transfer verification
+* Awaiting customer acceptance
+
+---
+
+## Completed-Sale Corrections
+
+Completed sales are immutable.
+
+A completed transaction must not be directly edited.
+
+Corrections require:
+
+* Authorised cancellation or reversal
+* A reason
+* A linked replacement sale where relevant
+* A complete audit trail
+
+---
+
+## Reporting and Analytics
+
+The management dashboard will provide information about:
+
+* Appointments
+* Booking changes
+* Home-service requests
+* Sales
+* Product revenue
+* Service revenue
+* Outstanding balances
+* Online orders
+* Delivery quotations
+* Stock
+* Expiry
+* Expenses
+* Pending reviews
+* Customer trends
+* Branch comparisons
+* Payment methods
+
+### Reports
+
+The system will generate reports for:
+
+* Daily sales
+* Weekly sales
+* Monthly sales
+* Product revenue
+* Service revenue
+* Appointment performance
+* Cancellations
+* No-shows
+* Popular services
+* Best-selling products
+* Staff sales
+* Customer retention
+* Inventory
+* Expiry
+* Expenses
+* Product gross profit
+* Payments
+* Branch comparisons
+* Home services
+* Online orders
+* Consultations
+
+Reports should be exportable as:
+
+* PDF
+* Excel
+* CSV
+
+---
+
+## Customer Retention Analytics
+
+Retention metrics will include:
+
+* New customers
+* Returning customers
+* Repeat bookings
+* Repeat purchases
+* Inactive customers
+* Abandoned carts
+* Appointment cancellations
+* Repeated no-shows
+* Favourite services
+* Customer lifetime sales value
+
+---
+
+## Financial Calculations
 
 ```text
-Product gross profit = Product sales revenue - Cost of goods sold
-
-Estimated operating result = Total recorded revenue
-                           - Product cost of goods sold
-                           - Recorded expenses
+Product gross profit =
+Product sales revenue - Cost of goods sold
 ```
 
-The second value must be labeled as an estimate because complete service-delivery costing is deferred.
+```text
+Estimated operating result =
+Total recorded revenue
+- Product cost of goods sold
+- Recorded expenses
+```
 
-## Security, privacy, and auditability
+The operating result must be labelled as an estimate because full service-delivery costing is outside Phase 1.
 
-The planned baseline includes:
+---
 
-- Secure password hashing, HTTPS, input validation, and protection against common web attacks.
-- Role- and branch-based access control, session timeout, login-attempt protection, email verification, and password reset.
-- Restricted medical and treatment data, separated from routine contact data through permissions and access logging.
-- Secure object/file storage for payment evidence, receipts, reports, and treatment photographs.
-- Explicit, optional, timestamped, and withdrawable photograph consent, separate from marketing consent and necessary treatment storage.
-- Secure payment webhooks and offline synchronization.
-- Daily backups and legally required data-export/deletion procedures.
-- Immutable audit records for authentication, permission, pricing, booking, stock, sales, refund, treatment-record, consent, expense, content-approval, transfer, and synchronization events.
+## Security
 
-Audit entries should capture the user, role, action, affected record, before/after values, branch, timestamp, IP address or device identifier, and a reason where required.
+The planned security baseline includes:
 
-## Proposed technical architecture
+* Secure password hashing
+* HTTPS
+* Input validation
+* Protection against common web attacks
+* Role-based access control
+* Branch-based access control
+* Session timeout
+* Login-attempt protection
+* Email verification
+* Password reset
+* Secure object storage
+* Payment webhook validation
+* Offline synchronisation controls
+* Daily backups
+* Data export and deletion procedures
+* Audit logging
 
-The following stack is recommended by the PRD and remains subject to confirmation during implementation:
+---
 
-| Layer | Proposed technology | Responsibility |
-| --- | --- | --- |
-| Backend | Python, Django, Django REST Framework | Authentication, administration, workflows, API, and business rules |
-| Database | PostgreSQL | Transactional relational storage and reporting |
-| Frontend | Next.js or React | Responsive public, customer, and management interfaces |
-| Offline POS | Progressive Web App, Service Worker, IndexedDB | Cached catalogue, local sales, and synchronization queue |
-| Background jobs | Redis and Celery, or equivalent | Email, reminders, reservation expiry, reports, and synchronization |
-| File storage | S3-compatible object storage | Images, proofs, receipts, treatment photographs, and report files |
-| Deployment | Containerized cloud environment | Environment separation, scaling, monitoring, and backups |
-| Payments | Provider adapter layer | Ghana Mobile Money, cards, refunds, and future provider changes |
+## Treatment Data Privacy
 
-The payment provider should be evaluated for Ghana Mobile Money and international card support, settlement time, fees, refunds, webhook reliability, documentation, and support.
+Treatment and medical information must be separated from ordinary customer contact information.
 
-## Core domain model
+Access should be limited to authorised personnel.
 
-The principal entities identified by the PRD are grouped below.
+Access to sensitive treatment information should be logged.
 
-- **Identity and access:** User, Customer, Customer Address, Customer Consent, Staff Member, Role, Permission, Branch, Device.
-- **Services and appointments:** Service Category, Service, Service Price Option, Service Package, Appointment, Appointment Service Item, Appointment History, Home-Service Request, Consultation, Treatment Record, Treatment Photograph.
-- **Catalogue and inventory:** Product Category, Product, Product Variant, Product Image, Product Batch, Branch Inventory, Stock Reservation, Stock Movement, Stock Count, Stock Count Item, Product Recipe.
-- **Commerce:** Shopping Cart, Cart Item, Wishlist, Order, Order Item, Delivery Quotation, Payment, Payment Allocation, Invoice, Receipt, POS Sale, POS Sale Item.
-- **Operations:** Expense, Review, Notification, Audit Log, Content Approval, Offline Transaction Queue.
+Treatment photographs require:
 
-All relevant operational entities must retain branch attribution. Transactional records should preserve historical values rather than relying only on mutable catalogue data.
+* Explicit consent
+* Separate consent from marketing permission
+* A timestamp
+* A stated purpose
+* Withdrawal support
+* Restricted storage
+* Restricted access
 
-## Roadmap
+---
 
-### Phase 1 — Minimum viable product
+## Audit Logging
 
-Responsive public website, accounts, clinic and home-service booking, paid consultations, e-commerce, payments, receipts, POS, offline operation, branch inventory, customer/treatment records, expenses, essential reporting, content approval, permissions, notifications, and audit logging.
+Audit entries should record:
 
-### Phase 2
+* User
+* Role
+* Action
+* Affected record
+* Previous value
+* New value
+* Branch
+* Timestamp
+* IP address or device identifier
+* Reason, where required
 
-- Staff schedules, attendance, leave, and salaries.
-- Advanced appointment capacity and automated staff assignment.
-- Advanced service costing and complete service-profit analysis.
-- Full WhatsApp Business API integration.
-- Supplier management, purchase orders, goods received, and supplier payments.
-- Barcode generation/scanning and detailed product-consumption measurements.
+Audit events should include:
 
-### Phase 3
+* Authentication
+* Permission changes
+* Pricing changes
+* Booking actions
+* Stock movements
+* Sales
+* Refunds
+* Treatment-record access
+* Consent changes
+* Expense changes
+* Content approvals
+* Branch transfers
+* POS synchronisation
 
-- Mobile applications, loyalty points, referrals, and gift cards.
-- Automated subscriptions and recurring beauty-plan billing.
-- Discount codes, courier integration, dynamic international shipping, and multi-currency display.
-- Waiting lists and customer reference-image uploads.
-- Advanced forecasting, demand prediction, staff-performance scoring, and central warehouse management.
+---
 
-### Explicitly out of Phase 1
+## Proposed Technology Stack
 
-Native mobile apps, automated WhatsApp API messaging, barcodes, supplier/purchase-order workflows, automatic courier pricing, cash on delivery, store credit, loyalty/referrals/gift cards, recurring billing, payroll, attendance, leave, commissions, detailed service costing, waiting lists, public staff reviews, VAT calculation, wholesale accounts, and reseller accounts.
+| Layer           | Technology                                     | Responsibility                                                      |
+| --------------- | ---------------------------------------------- | ------------------------------------------------------------------- |
+| Backend         | Python, Django, Django REST Framework          | APIs, workflows, authentication, administration, and business rules |
+| Database        | PostgreSQL                                     | Transactional data and reporting                                    |
+| Frontend        | Next.js                                        | Customer, public, and management interfaces                         |
+| Offline POS     | Progressive Web App, Service Worker, IndexedDB | Offline transactions and synchronisation                            |
+| Background jobs | Redis and Celery                               | Notifications, reservations, reports, and scheduled processing      |
+| File storage    | S3-compatible object storage                   | Images, receipts, proofs, reports, and treatment photographs        |
+| Deployment      | Containerised cloud environment                | Scaling, separation, monitoring, and backups                        |
+| Payments        | Provider adapter layer                         | Mobile Money, card payments, refunds, and provider switching        |
 
-## Phase 1 acceptance criteria
+---
 
-The release will be considered functionally complete when it satisfies the PRD's 40 acceptance criteria, summarized as follows:
+## Core Domain Model
 
-- [x] Public visitors can browse services and products; authentication gates booking and purchasing.
-- [ ] Customers can register and log in with email or phone credentials.
-- [ ] A booking can contain multiple services and target Makola or Tse Addo.
-- [ ] Customers can request preferred times and choose Pay at Clinic.
-- [ ] Consultations require a separate, non-refundable GHS 200 payment.
-- [ ] Management can approve bookings or propose changes that customers must accept.
-- [ ] Duplicate active customer/service bookings are blocked, with audited management overrides.
-- [ ] Eligible home services support full management quotations.
-- [ ] Customers can purchase products online, including fully paid preorders.
-- [ ] Checkout reserves stock for 30 minutes and deducts it after successful payment.
-- [ ] Pickup selection reflects branch availability; delivery quotations are managed manually.
-- [ ] POS supports products, services, split payments, temporary offline operation, and later synchronization.
-- [ ] Every sale records its branch and cashier.
-- [ ] Inventory is branch-specific and captures treatment consumption, counts, low stock, and expiry.
-- [ ] Completed sales cannot be edited; corrections use authorized, audited reversals.
-- [ ] Customers receive automatic email receipts; management receives email and in-system notifications.
-- [ ] Sensitive treatment information is visible only to authorized management.
-- [ ] Product and service publication changes require owner approval.
-- [ ] Reports export to PDF, Excel, and CSV and support branch comparison.
-- [ ] The platform maintains a complete audit log and works on desktop and mobile browsers.
+### Identity and Access
 
-Refer to the PRD for the normative, individually numbered acceptance criteria.
+* User
+* Customer
+* Customer Address
+* Customer Consent
+* Staff Member
+* Role
+* Permission
+* Branch
+* Device
 
-## Delivery dependencies and risks
+### Services and Appointments
 
-### Business inputs required
+* Service Category
+* Service
+* Service Price Option
+* Service Package
+* Appointment
+* Appointment Service Item
+* Appointment History
+* Home-Service Request
+* Consultation
+* Treatment Record
+* Treatment Photograph
 
-- Final service catalogue, descriptions, duration, pricing, and photographs.
-- Product catalogue, variants, cost/selling prices, opening stock, batches, expiry data, and images.
-- Staff list and branch contact/location details.
-- Bank and Mobile Money details and the selected payment provider.
-- Legal and operational policies, social links, gallery content, and email accounts.
-- Hosting, domain, and environment decisions.
+### Products and Inventory
 
-### Principal risks
+* Product Category
+* Product
+* Product Variant
+* Product Image
+* Product Batch
+* Branch Inventory
+* Stock Reservation
+* Stock Movement
+* Stock Count
+* Stock Count Item
+* Product Recipe
 
-| Risk | Likely impact | Planned response |
-| --- | --- | --- |
-| Payment-provider approval delays | Online payments may miss launch | Start onboarding early; retain bank transfer and Pay at Clinic options |
-| Offline stock conflicts | Offline sales may conflict with online inventory | Use branch stock, queued transactions, conflict alerts, and controlled permissions |
-| Incomplete product data | Catalogue entry delays launch | Prepare a standardized catalogue early |
-| Missing professional content | Public-site presentation is weakened | Use approved temporary brand imagery and replace it later |
-| Compressed delivery schedule | Quality or scope may be pressured | Enforce Phase 1 priorities and defer nonessential capabilities |
+### Commerce
 
-## Repository structure
+* Shopping Cart
+* Cart Item
+* Wishlist
+* Order
+* Order Item
+* Delivery Quotation
+* Payment
+* Payment Allocation
+* Invoice
+* Receipt
+* POS Sale
+* POS Sale Item
+
+### Operations
+
+* Expense
+* Review
+* Notification
+* Audit Log
+* Content Approval
+* Offline Transaction Queue
+
+All relevant records must retain branch attribution.
+
+Transactional records should preserve historical values rather than relying only on current product or service catalogue values.
+
+---
+
+## System Architecture
+
+```text
+Public Website / Customer Portal / Management Dashboard
+                         │
+                         ▼
+                    Next.js Frontend
+                         │
+                         ▼
+                Django REST Framework API
+        ┌────────────────┼─────────────────┐
+        │                │                 │
+        ▼                ▼                 ▼
+ Authentication     Business Logic      Reporting
+        │                │                 │
+        └────────────────┼─────────────────┘
+                         ▼
+                     PostgreSQL
+        ┌────────────────┼─────────────────┐
+        │                │                 │
+        ▼                ▼                 ▼
+   Redis/Celery    Object Storage      Audit Logs
+                         │
+                         ▼
+                 Payment Providers
+```
+
+The offline POS will maintain a local transaction queue and synchronise with the backend when connectivity becomes available.
+
+---
+
+## Repository Structure
 
 ```text
 golden_touch_beauty/
 ├── backend/
-│   ├── accounts/             # Custom user model and email/phone authentication
-│   ├── config/               # Django settings and root URL configuration
-│   ├── core/                 # Shared model foundation and health endpoint
-│   ├── branches/             # Branch domain app scaffold
-│   ├── bookings/             # Booking domain app scaffold
-│   ├── customers/            # Customer domain app scaffold
-│   ├── services/             # Service catalogue app scaffold
-│   ├── products/             # Product catalogue app scaffold
-│   ├── inventory/            # Inventory app scaffold
-│   ├── orders/               # E-commerce order app scaffold
-│   ├── pos/                  # Point-of-sale app scaffold
-│   ├── payments/             # Payment app scaffold
-│   ├── expenses/             # Expense app scaffold
-│   ├── notifications/        # Notification app scaffold
-│   ├── reports/              # Reporting app scaffold
-│   ├── auditlog/             # Audit-log app scaffold
-│   ├── .env.example          # Local environment template
+│   ├── accounts/
+│   ├── config/
+│   ├── core/
+│   ├── branches/
+│   ├── bookings/
+│   ├── customers/
+│   ├── services/
+│   ├── products/
+│   ├── inventory/
+│   ├── orders/
+│   ├── pos/
+│   ├── payments/
+│   ├── expenses/
+│   ├── notifications/
+│   ├── reports/
+│   ├── auditlog/
+│   ├── .env.example
 │   ├── manage.py
 │   └── requirements.txt
+├── frontend/
 ├── docs/
 │   ├── Project Requirement Document GTBC.docx
-│   └── logo*.png
+│   ├── DEVELOPMENT_ROADMAP.md
+│   ├── PHASE_1_BUILD_CHECKLIST.md
+│   ├── BUSINESS_SEED_DATA.md
+│   ├── DRAFT_POLICIES.md
+│   ├── API_CONVENTIONS.md
+│   ├── architecture/
+│   └── logo.png
+├── compose.yaml
 ├── .gitignore
 └── README.md
 ```
 
-The domain apps beyond `accounts` and `core` are currently scaffolds; their models, APIs, workflows, permissions, and tests still need implementation.
+Most domain applications currently contain scaffolding and still require full implementation of:
 
-## Getting started
+* Models
+* APIs
+* Permissions
+* Workflows
+* Validation
+* Tests
 
-### Backend development setup
+---
 
-Prerequisites:
+## Local Development
 
-- Python 3.13 or a compatible Python version
-- PostgreSQL
+### Requirements
+
+* Python 3.13 or a compatible Python version
+* PostgreSQL
+* Docker
+* Node.js and npm for frontend development
+
+### Backend Setup
 
 ```powershell
 cd backend
@@ -396,13 +932,15 @@ pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
 
-From the repository root, start the local PostgreSQL service:
+Start PostgreSQL from the repository root:
 
 ```powershell
 docker compose up -d postgres
 ```
 
-Update `.env` with a secure development secret. The example database credentials already match `compose.yaml`. Then initialize and run Django:
+Update the `.env` file with an appropriate development secret.
+
+Then run:
 
 ```powershell
 python manage.py migrate
@@ -411,17 +949,31 @@ python manage.py seed_development_data
 python manage.py runserver
 ```
 
-`seed_development_data` loads the two development branches, service catalogue, product catalogue, variants, branch availability, and opening stock. It is idempotent and restricted to development mode unless explicitly forced in an isolated test environment.
+The seed command loads:
 
-The development endpoints are:
+* Makola branch
+* Tse Addo branch
+* Development service catalogue
+* Development product catalogue
+* Product variants
+* Branch availability
+* Opening stock
 
-- Health check: `http://127.0.0.1:8000/api/v1/health/`
-- OpenAPI schema: `http://127.0.0.1:8000/api/schema/`
-- Swagger UI: `http://127.0.0.1:8000/api/docs/`
-- ReDoc: `http://127.0.0.1:8000/api/redoc/`
-- Django admin: `http://127.0.0.1:8000/admin/`
+---
 
-Run validation with:
+## Development Endpoints
+
+* Health check: `http://127.0.0.1:8000/api/v1/health/`
+* OpenAPI schema: `http://127.0.0.1:8000/api/schema/`
+* Swagger UI: `http://127.0.0.1:8000/api/docs/`
+* ReDoc: `http://127.0.0.1:8000/api/redoc/`
+* Django admin: `http://127.0.0.1:8000/admin/`
+
+---
+
+## Testing
+
+Run:
 
 ```powershell
 python manage.py check
@@ -429,25 +981,223 @@ python manage.py makemigrations --check --dry-run
 python manage.py test --settings=config.settings.test
 ```
 
-### Next implementation steps
+Future testing should cover:
 
-1. Review and formally approve the PRD and Phase 1 boundary.
-2. Resolve open product decisions, especially payment-provider selection and production infrastructure.
-3. Collect the business content and catalogue data listed under [Delivery dependencies and risks](#delivery-dependencies-and-risks).
-4. Confirm the technical stack and record major choices as architecture decision records.
-5. Create UX flows and responsive designs for the public site, customer portal, management console, and offline POS.
-6. Establish test, staging, and production environments.
-7. Convert the acceptance criteria into traceable user stories and automated test cases as implementation proceeds.
+* Authentication
+* Role permissions
+* Branch isolation
+* Booking conflicts
+* Payment allocation
+* Stock reservation
+* Inventory deductions
+* POS synchronisation
+* Treatment privacy
+* Audit logging
+* Reports
+* Refund and reversal workflows
+
+---
+
+## Roadmap
+
+### Phase 1
+
+* Responsive public website
+* Customer accounts
+* Appointment booking
+* Home-service requests
+* Paid consultations
+* Online shop
+* Payments
+* Receipts
+* POS
+* Offline operations
+* Branch inventory
+* Treatment records
+* Expenses
+* Essential reports
+* Content approvals
+* Roles and permissions
+* Notifications
+* Audit logs
+
+### Phase 2
+
+* Staff schedules
+* Attendance
+* Leave
+* Salaries
+* Advanced capacity planning
+* Automatic staff assignment
+* Advanced service costing
+* Complete service-profit analysis
+* WhatsApp Business API
+* Supplier management
+* Purchase orders
+* Goods received
+* Supplier payments
+* Barcode generation and scanning
+* Detailed product-consumption measurements
+
+### Phase 3
+
+* Native mobile applications
+* Loyalty points
+* Referral programmes
+* Gift cards
+* Automated subscriptions
+* Recurring beauty-plan billing
+* Discount codes
+* Courier integrations
+* Dynamic international shipping
+* Multi-currency display
+* Waiting lists
+* Customer reference-image upload
+* Advanced forecasting
+* Demand prediction
+* Staff performance analytics
+* Central warehouse management
+
+---
+
+## Phase 1 Acceptance Checklist
+
+* [x] Public visitors can browse available services and products
+* [ ] Customers can register and log in with email or phone credentials
+* [ ] Customers can book multiple services under one reference
+* [ ] Customers can select either Makola or Tse Addo
+* [ ] Customers can request preferred appointment times
+* [ ] Customers can select Pay at Clinic
+* [ ] Consultations require a non-refundable GHS 200 payment
+* [ ] Management can approve bookings
+* [ ] Management can propose appointment changes
+* [ ] Customers can accept proposed changes
+* [ ] Duplicate active bookings are prevented
+* [ ] Management overrides are audited
+* [ ] Home-service quotations are supported
+* [ ] Customers can purchase products online
+* [ ] Preorders require full payment
+* [ ] Checkout reserves stock for 30 minutes
+* [ ] Successful payments deduct stock
+* [ ] Pickup reflects branch availability
+* [ ] POS supports products and services
+* [ ] POS supports split payments
+* [ ] Offline POS transactions synchronise later
+* [ ] Every sale records the branch and cashier
+* [ ] Inventory is branch-specific
+* [ ] Treatment consumption updates inventory
+* [ ] Physical stock counts are supported
+* [ ] Low-stock and expiry alerts are generated
+* [ ] Completed sales are immutable
+* [ ] Corrections use audited reversals
+* [ ] Customers receive receipts
+* [ ] Sensitive treatment information is restricted
+* [ ] Publication changes require approval
+* [ ] Reports export to PDF, Excel, and CSV
+* [ ] Branch comparison reports are available
+* [ ] Complete audit logs are maintained
+* [ ] Interfaces work on desktop and mobile browsers
+
+---
+
+## Delivery Dependencies
+
+The following business inputs are required:
+
+* Final service catalogue
+* Service descriptions
+* Service durations
+* Service prices
+* Service photographs
+* Product catalogue
+* Product variants
+* Product cost prices
+* Product selling prices
+* Opening stock
+* Product batches
+* Expiry dates
+* Product images
+* Staff list
+* Branch contact information
+* Bank details
+* Mobile Money details
+* Payment-provider decision
+* Legal policies
+* Gallery content
+* Social links
+* Email accounts
+* Hosting decision
+* Domain configuration
+
+---
+
+## Key Risks
+
+| Risk                              | Potential Impact                     | Mitigation                                                        |
+| --------------------------------- | ------------------------------------ | ----------------------------------------------------------------- |
+| Payment-provider approval delays  | Online payments may be delayed       | Begin onboarding early and retain bank transfer and Pay at Clinic |
+| Offline inventory conflicts       | Online and offline stock may differ  | Use branch stock controls, queues, alerts, and permissions        |
+| Incomplete catalogue data         | Public launch may be delayed         | Prepare standardised business data early                          |
+| Missing professional content      | Public website may appear incomplete | Use approved temporary assets and replace them later              |
+| Compressed development schedule   | Scope or quality may suffer          | Enforce Phase 1 priorities and defer nonessential features        |
+| Sensitive treatment data exposure | Privacy and reputational damage      | Use permissions, encryption, secure storage, and access logs      |
+
+---
 
 ## Documentation
 
-- [Product Requirements Document](docs/Project%20Requirement%20Document%20GTBC.docx) — authoritative requirements, workflows, scope, and acceptance criteria.
-- [Development Roadmap](docs/DEVELOPMENT_ROADMAP.md) — two-phase, implementation-ready checklist from the current foundation through commerce, booking, payments, POS, and full operations.
-- [Phase 1 Plain-Language Build Checklist](docs/PHASE_1_BUILD_CHECKLIST.md) — page-by-page production order with frontend routes, backend work, tests, and completion results.
-- [Development Business Seed Data](docs/BUSINESS_SEED_DATA.md) — approved development branch, service, product, image, and payment-provider placeholders.
-- [Draft Development Policies](docs/DRAFT_POLICIES.md) — provisional terms, cancellation/refund, delivery/returns, privacy, and disclaimer copy requiring review before production.
-- [Authentication Architecture Decision](docs/architecture/ADR-001-authentication.md) — selected same-origin Django session and CSRF strategy.
-- [API Conventions](docs/API_CONVENTIONS.md) — versioning and the standard backend/frontend error contract.
-- [Brand logo](docs/logo.png) — current repository brand asset.
+* [Product Requirements Document](docs/Project%20Requirement%20Document%20GTBC.docx)
+* [Development Roadmap](docs/DEVELOPMENT_ROADMAP.md)
+* [Phase 1 Build Checklist](docs/PHASE_1_BUILD_CHECKLIST.md)
+* [Development Business Seed Data](docs/BUSINESS_SEED_DATA.md)
+* [Draft Policies](docs/DRAFT_POLICIES.md)
+* [Authentication Architecture Decision](docs/architecture/ADR-001-authentication.md)
+* [API Conventions](docs/API_CONVENTIONS.md)
+* [Brand Logo](docs/logo.png)
 
-When this README and the PRD differ, the signed-off PRD and subsequent approved change records should take precedence.
+Where this README differs from an approved and signed Product Requirements Document or subsequent approved change record, the approved requirements should take precedence.
+
+---
+
+## Current Priorities
+
+1. Approve the Phase 1 requirements and scope.
+2. Select a payment provider.
+3. Complete business catalogue data.
+4. Create UX designs.
+5. Implement authentication workflows.
+6. Implement customer and staff permissions.
+7. Build the service catalogue.
+8. Build appointment workflows.
+9. Build products and inventory.
+10. Implement payments and POS.
+11. Configure test, staging, and production environments.
+12. Convert acceptance criteria into automated tests.
+
+---
+
+## Disclaimer
+
+This repository documents and develops a business-management platform for Golden Touch Beauty Centre.
+
+Features described as planned, proposed, future, or Phase 1 are not necessarily available in the current application.
+
+The platform should not be deployed for production financial, treatment, inventory, or customer-data operations until the relevant workflows, security controls, tests, policies, and deployment configurations have been completed and approved.
+
+---
+
+## Author and Product Team
+
+**Product:** Golden Touch Beauty Centre Management Platform
+**Business:** Golden Touch Beauty Centre
+**Technical Development:** Kastech Inc.
+
+### Lead Developer
+
+**Kassim Mutawakil**
+
+Software Engineer | AI Researcher | Cybercrime Investigator
+
+* GitHub: https://github.com/Yafoo93
+* LinkedIn: https://linkedin.com/in/mutawakil-kassim-159a7178
+* Email: [kassim.mutawakil@gmail.com](mailto:kassim.mutawakil@gmail.com)
