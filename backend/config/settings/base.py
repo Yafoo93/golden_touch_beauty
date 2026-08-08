@@ -232,6 +232,13 @@ DEFAULT_FROM_EMAIL = env(
     "DEFAULT_FROM_EMAIL",
     default="Golden Touch Beauty Centre <noreply@goldentouch.local>",
 )
+EMAIL_HOST = env("DJANGO_EMAIL_HOST", default="localhost")
+EMAIL_PORT = env.int("DJANGO_EMAIL_PORT", default=587)
+EMAIL_HOST_USER = env("DJANGO_EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env("DJANGO_EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = env.bool("DJANGO_EMAIL_USE_TLS", default=True)
+EMAIL_USE_SSL = env.bool("DJANGO_EMAIL_USE_SSL", default=False)
+EMAIL_TIMEOUT = env.int("DJANGO_EMAIL_TIMEOUT", default=15)
 EMAIL_VERIFICATION_MAX_AGE_SECONDS = env.int(
     "EMAIL_VERIFICATION_MAX_AGE_SECONDS",
     default=86400,

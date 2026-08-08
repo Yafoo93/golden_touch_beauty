@@ -4,23 +4,9 @@ import { useEffect, useState } from "react";
 
 import { ButtonLink } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api";
+import type { PaginatedResponse } from "@/lib/branches";
 import { formatGhanaCedis } from "@/lib/formatters";
-
-type CustomerOrder = {
-  id: string;
-  reference: string;
-  status: string;
-  payment_status: string;
-  branch_name: string;
-  total_amount: string;
-  created_at: string;
-  items: Array<{
-    id: string;
-    product_name: string;
-    variant_name: string;
-    quantity: number;
-  }>;
-};
+import type { CustomerOrder } from "@/lib/orders";
 
 export function AccountOrders() {
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
@@ -28,8 +14,10 @@ export function AccountOrders() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    apiFetch<CustomerOrder[]>("orders/")
-      .then(setOrders)
+    apiFetch<CustomerOrder[] | PaginatedResponse<CustomerOrder>>("orders/")
+      .then((response) =>
+        setOrders(Array.isArray(response) ? response : response.results),
+      )
       .catch((error) =>
         setMessage(
           error instanceof Error ? error.message : "Orders could not be loaded.",
@@ -38,7 +26,9 @@ export function AccountOrders() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <p className="account-section-status">Loading orders…</p>;
+  if (loading) {
+    return <p className="account-section-status">Loading orders...</p>;
+  }
 
   return (
     <section className="account-bookings" aria-labelledby="account-orders-title">
@@ -74,6 +64,13 @@ export function AccountOrders() {
                 {formatGhanaCedis(order.total_amount)} · Payment{" "}
                 {order.payment_status.replaceAll("_", " ")}
               </p>
+              <ButtonLink
+                href={`/checkout/success?order=${encodeURIComponent(order.reference)}`}
+                size="small"
+                variant="outline"
+              >
+                View order
+              </ButtonLink>
             </div>
             <strong>{order.status.replaceAll("_", " ")}</strong>
           </article>

@@ -19,6 +19,7 @@ from branches.permissions import (
 )
 
 from .models import Booking, BookingBlock, BookingHistory
+from .emails import send_booking_confirmation_email, send_booking_update_email
 from .serializers import (
     BookingActionSerializer,
     BookingBlockSerializer,
@@ -60,6 +61,7 @@ class CustomerBookingListCreateView(generics.ListCreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         booking = serializer.save()
+        send_booking_confirmation_email(booking)
         return Response(
             BookingSerializer(booking_queryset().get(pk=booking.pk)).data,
             status=status.HTTP_201_CREATED,
@@ -111,6 +113,13 @@ class CustomerBookingProposalView(APIView):
             to_status=booking.status,
             actor=request.user,
         )
+        if accepted:
+            transaction.on_commit(
+                lambda booking_id=booking.pk: send_booking_update_email(
+                    booking_queryset().get(pk=booking_id),
+                    "proposed_time_accepted",
+                )
+            )
         return Response(BookingSerializer(booking_queryset().get(pk=booking.pk)).data)
 
 
@@ -213,6 +222,7 @@ class ManagementBookingListCreateView(
         if not can_access_branch(request.user, branch):
             raise PermissionDenied("You are not assigned to this branch.")
         booking = serializer.save()
+        send_booking_confirmation_email(booking)
         return Response(
             BookingSerializer(booking_queryset().get(pk=booking.pk)).data,
             status=status.HTTP_201_CREATED,
@@ -352,6 +362,21 @@ class ManagementBookingActionView(APIView):
                 else {}
             ),
         )
+        email_events = {
+            "confirm": "confirmed",
+            "propose_time": "time_proposed",
+            "cancel": "cancelled",
+            "reject": "rejected",
+        }
+        if action in email_events:
+            transaction.on_commit(
+                lambda booking_id=booking.pk, event=email_events[action]: (
+                    send_booking_update_email(
+                        booking_queryset().get(pk=booking_id),
+                        event,
+                    )
+                )
+            )
         return Response(BookingSerializer(booking_queryset().get(pk=booking.pk)).data)
 
 

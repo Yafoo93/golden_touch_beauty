@@ -16,6 +16,7 @@ from branches.models import Branch
 from inventory.models import BranchInventory, StockMovement
 from products.models import CustomerCartItem
 
+from .emails import send_order_confirmation_email, send_order_status_email
 from .models import Order, OrderItem, StockReservation
 from .serializers import CheckoutCreateSerializer, OrderSerializer
 from .services import release_expired_for_inventories, release_order_reservations
@@ -266,6 +267,11 @@ class CheckoutCreateView(APIView):
                 performed_by=request.user,
             )
         CustomerCartItem.objects.filter(customer=request.user).delete()
+        transaction.on_commit(
+            lambda order_id=order.pk: send_order_confirmation_email(
+                order_queryset().get(pk=order_id)
+            )
+        )
         return Response(
             OrderSerializer(order_queryset().get(pk=order.pk)).data,
             status=status.HTTP_201_CREATED,
@@ -325,6 +331,12 @@ class CustomerOrderCancelView(APIView):
                 "status", "payment_status", "cancelled_at", "updated_by",
                 "updated_at",
             ]
+        )
+        transaction.on_commit(
+            lambda order_id=order.pk: send_order_status_email(
+                order_queryset().get(pk=order_id),
+                Order.Status.CANCELLED,
+            )
         )
         for item in order.items.select_related("product_variant"):
             variant = item.product_variant

@@ -176,6 +176,54 @@ class LoginApiTests(TestCase):
         self.assertEqual(response.json()["user"]["post_login_path"], "/account")
         self.assertEqual(response.json()["user"]["portal_access"], [])
 
+    def test_customer_can_update_profile_without_updating_permissions(self):
+        self.user.email_verified_at = timezone.now()
+        self.user.save(update_fields=["email_verified_at", "updated_at"])
+        self.client.force_login(self.user)
+        response = self.client.patch(
+            reverse("accounts:me"),
+            {
+                "full_name": "Updated Customer Name",
+                "email": "updated-customer@example.com",
+                "phone_number": "020 555 0199",
+                "is_staff": True,
+                "is_superuser": True,
+            },
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.full_name, "Updated Customer Name")
+        self.assertEqual(self.user.email, "updated-customer@example.com")
+        self.assertEqual(self.user.phone_number, "+233205550199")
+        self.assertFalse(self.user.is_staff)
+        self.assertFalse(self.user.is_superuser)
+        self.assertIsNone(self.user.email_verified_at)
+        self.assertEqual(response.json()["user"]["post_login_path"], "/account")
+
+    def test_profile_update_rejects_another_users_email_and_phone(self):
+        other = User.objects.create_user(
+            email="another@example.com",
+            phone_number="+233205550188",
+            full_name="Another Customer",
+            password="SafeCustomerPass!2026",
+        )
+        self.client.force_login(self.user)
+        response = self.client.patch(
+            reverse("accounts:me"),
+            {
+                "email": other.email,
+                "phone_number": other.phone_number,
+            },
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.email, "customer@example.com")
+        self.assertEqual(self.user.phone_number, "+233241234567")
+
     def test_staff_destination_uses_active_branch_roles(self):
         branch = Branch.objects.create(
             name="Login Routing Branch",

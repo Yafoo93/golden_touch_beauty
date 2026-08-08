@@ -1,7 +1,9 @@
 import uuid
 from datetime import timedelta
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.core import mail
 from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
@@ -13,7 +15,7 @@ from inventory.models import BranchInventory, StockMovement
 from products.models import CustomerCartItem, Product, ProductCategory, ProductVariant
 
 from .models import Order, StockReservation
-from .services import capture_order_stock
+from .services import capture_order_stock, transition_order_status
 
 
 User = get_user_model()
@@ -146,12 +148,44 @@ class CheckoutApiTests(TestCase):
     def test_repeating_client_request_creates_exactly_one_order(self):
         self.add_cart()
         payload = self.payload()
-        first = self.create_order(payload)
-        repeated = self.create_order(payload)
+        with self.captureOnCommitCallbacks(execute=True):
+            first = self.create_order(payload)
+            repeated = self.create_order(payload)
         self.assertEqual(first.status_code, status.HTTP_201_CREATED)
         self.assertEqual(repeated.status_code, status.HTTP_200_OK)
         self.assertEqual(first.json()["reference"], repeated.json()["reference"])
         self.assertEqual(Order.objects.count(), 1)
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_new_order_email_contains_confirmation_not_payment_receipt(self):
+        self.add_cart(quantity=2)
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.create_order()
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(len(mail.outbox), 1)
+        email = mail.outbox[0]
+        reference = response.json()["reference"]
+        self.assertEqual(email.to, [self.customer.email])
+        self.assertIn(reference, email.subject)
+        self.assertIn("Checkout Face Cream (Standard) x 2", email.body)
+        self.assertIn("GHS 90.00", email.body)
+        self.assertIn(
+            f"/checkout/success?order={reference}",
+            email.body,
+        )
+        self.assertIn("not a payment receipt", email.body)
+
+    @patch("orders.emails.send_mail", side_effect=RuntimeError("SMTP unavailable"))
+    def test_email_failure_does_not_undo_order(self, _send_mail):
+        self.add_cart()
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.create_order()
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(
+            Order.objects.filter(reference=response.json()["reference"]).exists()
+        )
 
     def test_delivery_selects_a_fulfillment_branch_internally(self):
         self.add_cart()
@@ -188,16 +222,20 @@ class CheckoutApiTests(TestCase):
     def test_cancellation_releases_stock_and_restores_cart(self):
         self.add_cart()
         created = self.create_order().json()
-        response = self.client.post(
-            reverse("orders:customer-cancel", args=[created["reference"]]),
-            {},
-            content_type="application/json",
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                reverse("orders:customer-cancel", args=[created["reference"]]),
+                {},
+                content_type="application/json",
+            )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()["status"], Order.Status.CANCELLED)
         self.makola_stock.refresh_from_db()
         self.assertEqual(self.makola_stock.quantity_reserved, 0)
         self.assertTrue(CustomerCartItem.objects.filter(customer=self.customer).exists())
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("Order cancelled", mail.outbox[0].subject)
+        self.assertNotIn("12 Example Street", mail.outbox[0].body)
 
     def test_expiry_command_releases_reservation(self):
         self.add_cart()
@@ -215,8 +253,9 @@ class CheckoutApiTests(TestCase):
     def test_verified_payment_converts_reservation_to_sale_once(self):
         self.add_cart()
         created = self.create_order().json()
-        order = capture_order_stock(Order.objects.get(reference=created["reference"]))
-        repeated = capture_order_stock(order)
+        with self.captureOnCommitCallbacks(execute=True):
+            order = capture_order_stock(Order.objects.get(reference=created["reference"]))
+            repeated = capture_order_stock(order)
         self.assertEqual(repeated.status, Order.Status.PAID)
         self.makola_stock.refresh_from_db()
         self.assertEqual(self.makola_stock.quantity_on_hand, 1)
@@ -228,6 +267,54 @@ class CheckoutApiTests(TestCase):
             ).count(),
             1,
         )
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("Payment confirmed", mail.outbox[0].subject)
+
+    def test_operational_status_transitions_send_one_message_each(self):
+        self.add_cart()
+        created = self.create_order().json()
+        with self.captureOnCommitCallbacks(execute=True):
+            order = capture_order_stock(
+                Order.objects.get(reference=created["reference"])
+            )
+        mail.outbox.clear()
+
+        with self.captureOnCommitCallbacks(execute=True):
+            order = transition_order_status(order, Order.Status.PROCESSING)
+            repeated = transition_order_status(order, Order.Status.PROCESSING)
+            order = transition_order_status(
+                repeated, Order.Status.READY_FOR_PICKUP
+            )
+
+        self.assertEqual(order.status, Order.Status.READY_FOR_PICKUP)
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertIn("Order in progress", mail.outbox[0].subject)
+        self.assertIn("Order ready for pickup", mail.outbox[1].subject)
+
+    def test_invalid_or_wrong_fulfillment_transition_is_rejected(self):
+        self.add_cart()
+        created = self.create_order().json()
+        with self.captureOnCommitCallbacks(execute=True):
+            order = capture_order_stock(
+                Order.objects.get(reference=created["reference"])
+            )
+            order = transition_order_status(order, Order.Status.PROCESSING)
+
+        with self.assertRaisesMessage(ValueError, "Only delivery orders"):
+            transition_order_status(order, Order.Status.SHIPPED)
+
+    @patch("orders.emails.send_mail", side_effect=RuntimeError("SMTP unavailable"))
+    def test_status_email_failure_does_not_undo_transition(self, _send_mail):
+        self.add_cart()
+        created = self.create_order().json()
+        with self.captureOnCommitCallbacks(execute=True):
+            order = capture_order_stock(
+                Order.objects.get(reference=created["reference"])
+            )
+            order = transition_order_status(order, Order.Status.PROCESSING)
+
+        order.refresh_from_db()
+        self.assertEqual(order.status, Order.Status.PROCESSING)
 
     def test_customer_cannot_read_another_customers_order(self):
         self.add_cart()
@@ -237,3 +324,16 @@ class CheckoutApiTests(TestCase):
             reverse("orders:customer-detail", args=[created["reference"]])
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_customer_order_list_contains_the_created_order(self):
+        self.add_cart()
+        created = self.create_order()
+
+        response = self.client.get(reverse("orders:customer-list"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.json()), 1)
+        self.assertEqual(
+            response.json()[0]["reference"],
+            created.json()["reference"],
+        )

@@ -118,6 +118,58 @@ class CurrentUserSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class CustomerProfileUpdateSerializer(serializers.ModelSerializer):
+    def validate_full_name(self, value):
+        normalized = " ".join(value.split())
+        if len(normalized) < 2:
+            raise serializers.ValidationError("Enter your full name.")
+        return normalized
+
+    def validate_email(self, value):
+        normalized = User.objects.normalize_email(value).lower()
+        if User.objects.exclude(pk=self.instance.pk).filter(
+            email__iexact=normalized
+        ).exists():
+            raise serializers.ValidationError(
+                "An account with this email already exists."
+            )
+        return normalized
+
+    def validate_phone_number(self, value):
+        normalized = normalize_phone_number(value)
+        if not re.fullmatch(r"\+[1-9]\d{8,14}", normalized):
+            raise serializers.ValidationError(
+                "Enter a valid phone number with its country code."
+            )
+        if User.objects.exclude(pk=self.instance.pk).filter(
+            phone_number=normalized
+        ).exists():
+            raise serializers.ValidationError(
+                "An account with this phone number already exists."
+            )
+        return normalized
+
+    def update(self, instance, validated_data):
+        email_changed = (
+            "email" in validated_data
+            and validated_data["email"].lower() != instance.email.lower()
+        )
+        instance = super().update(instance, validated_data)
+        if email_changed:
+            instance.email_verified_at = None
+            instance.save(update_fields=["email_verified_at", "updated_at"])
+        return instance
+
+    class Meta:
+        model = User
+        fields = ("full_name", "email", "phone_number")
+        extra_kwargs = {
+            "full_name": {"required": True},
+            "email": {"required": True},
+            "phone_number": {"required": True},
+        }
+
+
 class LoginSerializer(serializers.Serializer):
     identifier = serializers.CharField(max_length=254, trim_whitespace=True)
     password = serializers.CharField(write_only=True, trim_whitespace=False)

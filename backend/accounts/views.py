@@ -23,6 +23,7 @@ from auditlog.services import actor_role_for, client_device, client_ip, record_e
 from .models import User
 from .serializers import (
     CurrentUserSerializer,
+    CustomerProfileUpdateSerializer,
     EmailVerificationConfirmSerializer,
     EmailVerificationResendSerializer,
     LoginSerializer,
@@ -58,6 +59,37 @@ class CurrentUserView(APIView):
 
     def get(self, request):
         return Response({"user": CurrentUserSerializer(request.user).data})
+
+    def patch(self, request):
+        previous_values = {
+            "full_name": request.user.full_name,
+            "email": request.user.email,
+            "phone_number": request.user.phone_number,
+        }
+        serializer = CustomerProfileUpdateSerializer(
+            request.user,
+            data=request.data,
+            partial=True,
+        )
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        new_values = {
+            "full_name": user.full_name,
+            "email": user.email,
+            "phone_number": user.phone_number,
+        }
+        record_event(
+            action="auth.profile_updated",
+            record_type="user",
+            record_id=user.pk,
+            actor=user,
+            actor_role=actor_role_for(user),
+            previous_values=previous_values,
+            new_values=new_values,
+            ip_address=client_ip(request),
+            device_identifier=client_device(request),
+        )
+        return Response({"user": CurrentUserSerializer(user).data})
 
 
 class RegisterView(APIView):

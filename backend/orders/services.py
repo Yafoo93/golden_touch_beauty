@@ -3,7 +3,65 @@ from django.utils import timezone
 
 from inventory.models import BranchInventory, StockMovement
 
+from .emails import send_order_status_email
 from .models import Order, StockReservation
+
+
+ORDER_STATUS_TRANSITIONS = {
+    Order.Status.PAID: {Order.Status.PROCESSING},
+    Order.Status.PROCESSING: {
+        Order.Status.READY_FOR_PICKUP,
+        Order.Status.SHIPPED,
+    },
+    Order.Status.READY_FOR_PICKUP: {Order.Status.DELIVERED},
+    Order.Status.SHIPPED: {Order.Status.DELIVERED},
+    Order.Status.DELIVERED: {Order.Status.RETURNED},
+    Order.Status.RETURNED: {Order.Status.REFUNDED},
+}
+
+
+def _notify_status_after_commit(order_id, event):
+    transaction.on_commit(
+        lambda: send_order_status_email(
+            Order.objects.select_related("customer", "branch")
+            .prefetch_related("items")
+            .get(pk=order_id),
+            event,
+        )
+    )
+
+
+@transaction.atomic
+def transition_order_status(order, new_status, *, actor=None):
+    """Apply a valid operational transition and notify the customer once."""
+    order = Order.objects.select_for_update().get(pk=order.pk)
+    if order.status == new_status:
+        return order
+    allowed = ORDER_STATUS_TRANSITIONS.get(order.status, set())
+    if new_status not in allowed:
+        raise ValueError(
+            f"Order cannot move from {order.get_status_display()} to "
+            f"{dict(Order.Status.choices).get(new_status, new_status)}."
+        )
+    if (
+        new_status == Order.Status.READY_FOR_PICKUP
+        and order.fulfillment_method != Order.FulfillmentMethod.PICKUP
+    ):
+        raise ValueError("Only pickup orders can be marked ready for pickup.")
+    if (
+        new_status == Order.Status.SHIPPED
+        and order.fulfillment_method != Order.FulfillmentMethod.DELIVERY
+    ):
+        raise ValueError("Only delivery orders can be marked as shipped.")
+    order.status = new_status
+    order.updated_by = actor if getattr(actor, "is_authenticated", False) else None
+    update_fields = ["status", "updated_by", "updated_at"]
+    if new_status == Order.Status.CANCELLED:
+        order.cancelled_at = timezone.now()
+        update_fields.append("cancelled_at")
+    order.save(update_fields=update_fields)
+    _notify_status_after_commit(order.pk, new_status)
+    return order
 
 
 def _movement(
@@ -76,6 +134,7 @@ def release_expired_for_inventories(inventories, *, now=None):
                     "status", "payment_status", "cancelled_at", "updated_at"
                 ]
             )
+            _notify_status_after_commit(order.pk, "expired")
     return len(reservations)
 
 
@@ -173,4 +232,5 @@ def capture_order_stock(order, *, actor=None):
     order.payment_status = "paid"
     order.paid_at = now
     order.save(update_fields=["status", "payment_status", "paid_at", "updated_at"])
+    _notify_status_after_commit(order.pk, Order.Status.PAID)
     return order

@@ -2,10 +2,15 @@ import type { Metadata } from "next";
 import { AccountOrders } from "@/components/account/account-orders";
 import { ButtonLink } from "@/components/ui/button";
 import { AccountBookings } from "@/components/account/account-bookings";
+import { AccountReceipts } from "@/components/account/account-receipts";
+import { ProfileForm } from "@/components/account/profile-form";
+import { requireAuthenticated } from "@/lib/server-auth";
 
 export const metadata: Metadata = { title: "My Account" };
 
-export default function AccountPage() {
+export default async function AccountPage() {
+  const user = await requireAuthenticated("/account");
+  const firstName = user.full_name.trim().split(/\s+/)[0] || "Customer";
   return (
     <main className="account-landing">
       <header className="account-landing__header">
@@ -17,7 +22,7 @@ export default function AccountPage() {
       <section className="account-landing__panel">
         <div>
           <p>Account dashboard</p>
-          <h2>Welcome to Golden Touch</h2>
+          <h2>Welcome, {firstName}</h2>
           <span>Review your booking requests and product orders, or continue shopping and managing saved products.</span>
         </div>
         <div className="account-landing__actions">
@@ -31,6 +36,8 @@ export default function AccountPage() {
       </section>
       <AccountBookings />
       <AccountOrders />
+      <AccountReceipts />
+      <ProfileForm profile={user} />
     </main>
   );
 }

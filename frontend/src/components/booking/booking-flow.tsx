@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { ServiceCardProps } from "@/components/catalogue/service-card";
@@ -28,7 +29,8 @@ export function BookingFlow({
   branchName: string;
   services: ServiceCardProps[];
 }) {
-  const [stage, setStage] = useState<"schedule" | "details" | "review" | "success">("schedule");
+  const router = useRouter();
+  const [stage, setStage] = useState<"schedule" | "details" | "review">("schedule");
   const [date, setDate] = useState("");
   const [slots, setSlots] = useState<Slot[]>([]);
   const [time, setTime] = useState("");
@@ -52,7 +54,6 @@ export function BookingFlow({
   );
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [booking, setBooking] = useState<CreatedBooking | null>(null);
   const requestId = useRef(globalThis.crypto?.randomUUID?.() ?? `${Date.now()}`);
 
   function selectedOption(service: ServiceCardProps) {
@@ -135,27 +136,14 @@ export function BookingFlow({
       data.set("payment_method", paymentMethod);
       if (photo) data.set("treatment_photo", photo);
       const created = await apiFetch<CreatedBooking>("bookings/", { method: "POST", body: data });
-      setBooking(created);
-      move("success");
+      router.push(
+        `/book/confirmation/${encodeURIComponent(created.reference)}`,
+      );
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Your appointment could not be submitted.");
     } finally {
       setSubmitting(false);
     }
-  }
-
-  if (stage === "success" && booking) {
-    return (
-      <section className="booking-flow booking-flow__success">
-        <p className="booking-flow__eyebrow">Request received</p>
-        <h2>Your booking reference is {booking.reference}</h2>
-        <p>
-          The branch will review the preferred time. You will receive confirmation or a proposed
-          alternative. Payment remains pending until the approved payment step is completed.
-        </p>
-        <Link href="/account">View your account</Link>
-      </section>
-    );
   }
 
   return (

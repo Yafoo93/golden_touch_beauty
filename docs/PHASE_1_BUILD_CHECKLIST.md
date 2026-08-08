@@ -462,18 +462,18 @@ Successful payment confirms the correct booking/order exactly once. Failed or re
 
 ### Customer output
 
-- [ ] Booking confirmation page and email.
-- [ ] Order confirmation page and email.
-- [ ] Payment receipt page and email.
-- [ ] Printable/downloadable receipt.
-- [ ] Appointment change and cancellation messages.
-- [ ] Order-status messages.
+- [x] Booking confirmation page and email.
+- [x] Order confirmation page and email.
+- [x] Payment receipt page and email.
+- [x] Printable/downloadable receipt.
+- [x] Appointment change and cancellation messages.
+- [x] Order-status messages.
 - [ ] In-system notification list.
 
 ### Pages
 
 - [ ] `/account/notifications` — customer notifications.
-- [ ] `/account/receipts/[reference]` — view/download a receipt.
+- [x] `/account/receipts/[reference]` — view/download a receipt.
 
 ### Backend work
 

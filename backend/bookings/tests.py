@@ -1,6 +1,8 @@
 import uuid
 from datetime import datetime, timedelta
+from unittest.mock import patch
 
+from django.core import mail
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -129,6 +131,23 @@ class BookingWorkflowApiTests(TestCase):
         self.assertEqual(len(first.json()["services"]), 2)
         self.assertEqual(Booking.objects.count(), 1)
         self.assertEqual(BookingHistory.objects.get().action, "created")
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [self.customer.email])
+        self.assertIn(first.json()["reference"], mail.outbox[0].body)
+        self.assertIn(
+            f"/book/confirmation/{first.json()['reference']}",
+            mail.outbox[0].body,
+        )
+        self.assertIn("Booking Facial", mail.outbox[0].body)
+        self.assertNotIn("None known", mail.outbox[0].body)
+
+        dashboard = self.client.get(reverse("bookings:customer-list"))
+        self.assertEqual(dashboard.status_code, status.HTTP_200_OK)
+        self.assertEqual(dashboard.json()["count"], 1)
+        self.assertEqual(
+            dashboard.json()["results"][0]["reference"],
+            first.json()["reference"],
+        )
 
     def test_booking_requires_authentication(self):
         response = self.client.post(
@@ -137,6 +156,27 @@ class BookingWorkflowApiTests(TestCase):
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    @patch(
+        "bookings.emails.send_mail",
+        side_effect=RuntimeError("Temporary email provider failure"),
+    )
+    def test_email_failure_does_not_undo_booking(self, _send_mail):
+        self.client.force_login(self.customer)
+
+        with self.assertLogs("golden_touch.notifications", level="ERROR"):
+            response = self.client.post(
+                reverse("bookings:customer-list"),
+                self.payload(
+                    service_selections=[{"service_id": str(self.facial.id)}]
+                ),
+                content_type="application/json",
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(
+            Booking.objects.filter(reference=response.json()["reference"]).exists()
+        )
 
     def test_duplicate_active_service_booking_is_rejected(self):
         self.client.force_login(self.customer)
@@ -200,26 +240,106 @@ class BookingWorkflowApiTests(TestCase):
         ).json()
         proposed = self.preferred_start + timedelta(days=1)
         self.client.force_login(self.owner)
-        action = self.client.post(
-            reverse("bookings:management-action", args=[created["reference"]]),
-            {"action": "propose_time", "proposed_start": proposed.isoformat()},
-            content_type="application/json",
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            action = self.client.post(
+                reverse("bookings:management-action", args=[created["reference"]]),
+                {"action": "propose_time", "proposed_start": proposed.isoformat()},
+                content_type="application/json",
+            )
         self.assertEqual(action.status_code, status.HTTP_200_OK)
         self.assertEqual(action.json()["status"], "proposed")
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertIn("New appointment time proposed", mail.outbox[-1].subject)
+        self.assertIn(proposed.strftime("%d %B %Y"), mail.outbox[-1].body)
+        self.assertNotIn("None known", mail.outbox[-1].body)
 
         self.client.force_login(self.customer)
-        accepted = self.client.post(
-            reverse("bookings:customer-proposal", args=[created["reference"]]),
-            {"accepted": True},
-            content_type="application/json",
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            accepted = self.client.post(
+                reverse("bookings:customer-proposal", args=[created["reference"]]),
+                {"accepted": True},
+                content_type="application/json",
+            )
         self.assertEqual(accepted.status_code, status.HTTP_200_OK)
         self.assertEqual(accepted.json()["status"], "confirmed")
+        self.assertEqual(len(mail.outbox), 3)
+        self.assertIn("New appointment time confirmed", mail.outbox[-1].subject)
         self.assertEqual(
             Booking.objects.get(reference=created["reference"]).preferred_start,
             proposed,
         )
+
+    def test_management_cancellation_sends_customer_message(self):
+        self.client.force_login(self.customer)
+        created = self.client.post(
+            reverse("bookings:customer-list"),
+            self.payload(service_selections=[{"service_id": str(self.facial.id)}]),
+            content_type="application/json",
+        ).json()
+
+        self.client.force_login(self.owner)
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                reverse("bookings:management-action", args=[created["reference"]]),
+                {"action": "cancel", "reason": "Internal scheduling note"},
+                content_type="application/json",
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()["status"], "cancelled")
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertIn("Appointment cancelled", mail.outbox[-1].subject)
+        self.assertNotIn("Internal scheduling note", mail.outbox[-1].body)
+
+    @patch(
+        "bookings.emails.send_mail",
+        side_effect=RuntimeError("Temporary email provider failure"),
+    )
+    def test_change_email_failure_does_not_undo_confirmation(self, _send_mail):
+        self.client.force_login(self.customer)
+        created = self.client.post(
+            reverse("bookings:customer-list"),
+            self.payload(service_selections=[{"service_id": str(self.facial.id)}]),
+            content_type="application/json",
+        ).json()
+
+        self.client.force_login(self.owner)
+        with self.assertLogs("golden_touch.notifications", level="ERROR"):
+            with self.captureOnCommitCallbacks(execute=True):
+                response = self.client.post(
+                    reverse(
+                        "bookings:management-action",
+                        args=[created["reference"]],
+                    ),
+                    {"action": "confirm"},
+                    content_type="application/json",
+                )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            Booking.objects.get(reference=created["reference"]).status,
+            Booking.Status.CONFIRMED,
+        )
+
+    def test_owner_management_list_contains_customer_pending_booking(self):
+        self.client.force_login(self.customer)
+        created = self.client.post(
+            reverse("bookings:customer-list"),
+            self.payload(service_selections=[{"service_id": str(self.facial.id)}]),
+            content_type="application/json",
+        )
+        self.assertEqual(created.status_code, status.HTTP_201_CREATED)
+
+        self.client.force_login(self.owner)
+        response = self.client.get(reverse("bookings:management-list"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 1)
+        self.assertEqual(
+            response.json()["results"][0]["reference"],
+            created.json()["reference"],
+        )
+        self.assertEqual(response.json()["results"][0]["status"], "pending")
 
     def test_customer_cannot_view_another_customers_booking(self):
         self.client.force_login(self.customer)
