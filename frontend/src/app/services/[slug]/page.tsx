@@ -3,12 +3,17 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 
 import { ButtonLink } from "@/components/ui/button";
+import { ServiceCard } from "@/components/catalogue/service-card";
 import {
   formatBranchTime,
   formatOpeningDays,
 } from "@/lib/branch-formatters";
 import { formatGhanaCedis } from "@/lib/formatters";
-import { getServiceDetail, type ServiceDetail } from "@/lib/services";
+import {
+  getRelatedServices,
+  getServiceDetail,
+  type ServiceDetail,
+} from "@/lib/services";
 
 function durationLabel(minutes: number) {
   if (minutes < 60) return `${minutes} minutes`;
@@ -55,6 +60,7 @@ export default async function ServiceDetailPage({
   const { slug } = await params;
   const service = await getServiceDetail(slug);
   if (!service) notFound();
+  const relatedServices = await getRelatedServices(service);
 
   return (
     <main className="service-detail-page">
@@ -210,6 +216,21 @@ export default async function ServiceDetailPage({
           ))}
         </div>
       </section>
+
+      {relatedServices.length ? (
+        <section className="related-catalogue" aria-labelledby="related-services-title">
+          <header className="related-catalogue__heading">
+            <p>Continue exploring</p>
+            <h2 id="related-services-title">Related services</h2>
+            <span>Other treatments in {service.category}.</span>
+          </header>
+          <div className="catalogue-grid">
+            {relatedServices.map((relatedService) => (
+              <ServiceCard key={relatedService.slug} {...relatedService} />
+            ))}
+          </div>
+        </section>
+      ) : null}
     </main>
   );
 }

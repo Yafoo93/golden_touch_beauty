@@ -89,7 +89,7 @@ export function AccountBookings() {
                 {formatGhanaCedis(booking.total_amount)}
               </p>
               <ButtonLink
-                href={`/book/confirmation/${booking.reference}`}
+                href={`/account/appointments/${booking.reference}`}
                 size="small"
                 variant="outline"
               >

@@ -6,6 +6,9 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.utils import timezone
 
+from notifications.models import Notification
+from notifications.services import create_notification
+
 
 logger = logging.getLogger("golden_touch.notifications")
 
@@ -15,6 +18,17 @@ def _money(currency, value):
 
 
 def send_receipt_email(receipt) -> bool:
+    create_notification(
+        recipient=receipt.customer,
+        category=Notification.Category.PAYMENT,
+        title="Payment receipt ready",
+        message=(
+            f"Payment was verified for {receipt.source_type} "
+            f"{receipt.source_reference}. Receipt {receipt.reference} is ready."
+        ),
+        action_url=f"/account/receipts/{receipt.reference}",
+        event_key=f"receipt:{receipt.pk}:issued",
+    )
     if receipt.email_sent_at or not receipt.recipient_email:
         return False
 

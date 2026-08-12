@@ -5,6 +5,9 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.utils import timezone
 
+from notifications.models import Notification
+from notifications.services import create_notification
+
 
 logger = logging.getLogger("golden_touch.notifications")
 
@@ -15,7 +18,21 @@ def _money(value):
 
 def send_order_confirmation_email(order) -> bool:
     """Send the customer a non-sensitive summary of a newly created order."""
-    if not order.customer_id or not order.customer.email:
+    if not order.customer_id:
+        return False
+
+    create_notification(
+        recipient=order.customer,
+        category=Notification.Category.ORDER,
+        title="Order received",
+        message=(
+            f"Your order {order.reference} was received. Complete payment "
+            "before the stock reservation expires."
+        ),
+        action_url=f"/account/orders/{order.reference}",
+        event_key=f"order:{order.pk}:created",
+    )
+    if not order.customer.email:
         return False
 
     items = list(order.items.all())
@@ -130,7 +147,7 @@ def send_order_confirmation_email(order) -> bool:
 
 def send_order_status_email(order, event: str | None = None) -> bool:
     """Notify a customer after an authoritative order status transition."""
-    if not order.customer_id or not order.customer.email:
+    if not order.customer_id:
         return False
 
     event = event or order.status
@@ -183,6 +200,18 @@ def send_order_status_email(order, event: str | None = None) -> bool:
         return False
 
     heading, update_text = messages[event]
+    create_notification(
+        recipient=order.customer,
+        category=Notification.Category.ORDER,
+        title=heading,
+        message=f"{update_text} Reference: {order.reference}.",
+        action_url=f"/account/orders/{order.reference}",
+        event_key=(
+            f"order:{order.pk}:{event}:{order.updated_at.isoformat()}"
+        ),
+    )
+    if not order.customer.email:
+        return False
     account_url = f"{settings.FRONTEND_URL.rstrip('/')}/account"
     item_lines = [
         f"- {item.product_name} ({item.variant_name}) x {item.quantity}"

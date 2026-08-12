@@ -29,6 +29,31 @@ type ServiceResponse = {
   price_options: ServicePriceOption[];
 };
 
+function serviceResponseToCard(service: ServiceResponse): ServiceCardProps {
+  return {
+    id: service.id,
+    name: service.name,
+    slug: service.slug,
+    category: service.category,
+    description: service.short_description,
+    price: service.price,
+    durationMinutes: service.duration_minutes,
+    imageSrc: service.image_path || "/images/hero1.jpeg",
+    availableAt: service.available_at,
+    priceType: service.price_type,
+    allowsPayAtClinic: service.allows_pay_at_clinic,
+    priceOptions: service.price_options,
+    badge:
+      service.price_type === "starting_from"
+        ? "Starting from"
+        : service.price_type === "options"
+          ? "Price options"
+          : service.price_type === "quotation"
+            ? "Quotation"
+            : service.pricing_notes || undefined,
+  };
+}
+
 export type ServiceCatalogueResult = {
   services: ServiceCardProps[];
   categories: ServiceCategory[];
@@ -74,28 +99,7 @@ export async function getServiceCatalogue(filters: {
   return {
     unavailable: services === null || categories === null,
     categories: categories ?? [],
-    services: (services ?? []).map((service) => ({
-      id: service.id,
-      name: service.name,
-      slug: service.slug,
-      category: service.category,
-      description: service.short_description,
-      price: service.price,
-      durationMinutes: service.duration_minutes,
-      imageSrc: service.image_path || "/images/hero1.jpeg",
-      availableAt: service.available_at,
-      priceType: service.price_type,
-      allowsPayAtClinic: service.allows_pay_at_clinic,
-      priceOptions: service.price_options,
-      badge:
-        service.price_type === "starting_from"
-          ? "Starting from"
-          : service.price_type === "options"
-            ? "Price options"
-            : service.price_type === "quotation"
-              ? "Quotation"
-          : service.pricing_notes || undefined,
-    })),
+    services: (services ?? []).map(serviceResponseToCard),
   };
 }
 
@@ -105,4 +109,27 @@ export async function getServiceDetail(
   return fetchBackendJson<ServiceDetail>(
     apiUrl(`${encodeURIComponent(slug)}/`),
   );
+}
+
+export async function getRelatedServices(
+  service: Pick<ServiceDetail, "slug" | "category_slug">,
+  limit = 3,
+): Promise<ServiceCardProps[]> {
+  const catalogue = await getServiceCatalogue({
+    category: service.category_slug,
+  });
+  const sameCategory = catalogue.services
+    .filter((candidate) => candidate.slug !== service.slug)
+    .slice(0, limit);
+  if (sameCategory.length >= limit) return sameCategory;
+
+  const fallback = await getServiceCatalogue({});
+  return [
+    ...sameCategory,
+    ...fallback.services.filter(
+      (candidate) =>
+        candidate.slug !== service.slug &&
+        !sameCategory.some((related) => related.slug === candidate.slug),
+    ),
+  ].slice(0, limit);
 }

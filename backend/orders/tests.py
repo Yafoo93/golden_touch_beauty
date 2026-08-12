@@ -12,6 +12,8 @@ from rest_framework import status
 
 from branches.models import Branch
 from inventory.models import BranchInventory, StockMovement
+from payments.models import Invoice, Payment
+from payments.services import issue_receipt_for_verified_payment
 from products.models import CustomerCartItem, Product, ProductCategory, ProductVariant
 
 from .models import Order, StockReservation
@@ -144,6 +146,11 @@ class CheckoutApiTests(TestCase):
         self.makola_stock.refresh_from_db()
         self.assertEqual(self.makola_stock.quantity_on_hand, 2)
         self.assertEqual(self.makola_stock.quantity_reserved, 2)
+        invoice = Invoice.objects.get(order__reference=body["reference"])
+        self.assertEqual(invoice.branch, self.makola)
+        self.assertEqual(invoice.customer, self.customer)
+        self.assertEqual(invoice.total_amount, 90)
+        self.assertEqual(invoice.line_items[0]["quantity"], 2)
 
     def test_repeating_client_request_creates_exactly_one_order(self):
         self.add_cart()
@@ -155,6 +162,7 @@ class CheckoutApiTests(TestCase):
         self.assertEqual(repeated.status_code, status.HTTP_200_OK)
         self.assertEqual(first.json()["reference"], repeated.json()["reference"])
         self.assertEqual(Order.objects.count(), 1)
+        self.assertEqual(Invoice.objects.count(), 1)
         self.assertEqual(len(mail.outbox), 1)
 
     def test_new_order_email_contains_confirmation_not_payment_receipt(self):
@@ -325,6 +333,39 @@ class CheckoutApiTests(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
+    def test_customer_order_detail_contains_payment_and_receipt(self):
+        self.add_cart()
+        created = self.create_order().json()
+        order = Order.objects.get(reference=created["reference"])
+        order.status = Order.Status.PAID
+        order.payment_status = "paid"
+        order.paid_at = timezone.now()
+        order.save(update_fields=["status", "payment_status", "paid_at", "updated_at"])
+        payment = Payment.objects.create(
+            branch=order.branch,
+            customer=self.customer,
+            order=order,
+            provider="paystack",
+            method="mobile_money",
+            status=Payment.Status.SUCCEEDED,
+            amount=order.total_amount,
+            paid_at=order.paid_at,
+        )
+        with self.captureOnCommitCallbacks(execute=True):
+            receipt = issue_receipt_for_verified_payment(payment)
+        self.client.force_login(self.customer)
+
+        response = self.client.get(
+            reverse("orders:customer-detail", args=[order.reference])
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()["payments"][0]["reference"], payment.reference)
+        self.assertEqual(
+            response.json()["payments"][0]["receipt_reference"], receipt.reference
+        )
+        self.assertEqual(response.json()["invoice_reference"], order.invoice.reference)
+
     def test_customer_order_list_contains_the_created_order(self):
         self.add_cart()
         created = self.create_order()
@@ -332,8 +373,34 @@ class CheckoutApiTests(TestCase):
         response = self.client.get(reverse("orders:customer-list"))
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.json()), 1)
+        self.assertEqual(response.json()["count"], 1)
         self.assertEqual(
-            response.json()[0]["reference"],
+            response.json()["results"][0]["reference"],
             created.json()["reference"],
         )
+
+    def test_customer_order_list_is_private_and_filterable_by_status(self):
+        self.add_cart()
+        created = self.create_order().json()
+        Order.objects.filter(reference=created["reference"]).update(
+            status=Order.Status.PAID
+        )
+
+        paid_response = self.client.get(
+            reverse("orders:customer-list"), {"status": Order.Status.PAID}
+        )
+        self.assertEqual(paid_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(paid_response.json()["count"], 1)
+        self.assertEqual(paid_response.json()["results"][0]["status"], "paid")
+
+        self.client.force_login(self.other)
+        other_response = self.client.get(reverse("orders:customer-list"))
+        self.assertEqual(other_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(other_response.json()["count"], 0)
+
+    def test_customer_order_list_rejects_an_unknown_status(self):
+        self.client.force_login(self.customer)
+        response = self.client.get(
+            reverse("orders:customer-list"), {"status": "not-a-status"}
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

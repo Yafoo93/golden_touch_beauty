@@ -113,3 +113,26 @@ export async function getProductDetail(
     apiUrl(`${encodeURIComponent(slug)}/`),
   );
 }
+
+export async function getRelatedProducts(
+  product: Pick<ProductDetail, "slug" | "category_slug">,
+  limit = 4,
+): Promise<ProductCardProps[]> {
+  const catalogue = await getProductCatalogue({
+    category: product.category_slug,
+  });
+  const sameCategory = catalogue.products
+    .filter((candidate) => candidate.slug !== product.slug)
+    .slice(0, limit);
+  if (sameCategory.length >= limit) return sameCategory;
+
+  const fallback = await getProductCatalogue({});
+  return [
+    ...sameCategory,
+    ...fallback.products.filter(
+      (candidate) =>
+        candidate.slug !== product.slug &&
+        !sameCategory.some((related) => related.slug === candidate.slug),
+    ),
+  ].slice(0, limit);
+}

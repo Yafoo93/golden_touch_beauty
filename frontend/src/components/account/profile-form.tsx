@@ -11,6 +11,8 @@ type Profile = {
   full_name: string;
   email: string;
   phone_number: string;
+  date_of_birth: string | null;
+  gender: "female" | "male" | "other" | "prefer_not_to_say" | "";
 };
 
 function validationDetails(error: ApiError) {
@@ -52,6 +54,8 @@ export function ProfileForm({ profile }: { profile: Profile }) {
           full_name: String(form.get("full_name") ?? "").trim(),
           email: String(form.get("email") ?? "").trim(),
           phone_number: String(form.get("phone_number") ?? "").trim(),
+          date_of_birth: String(form.get("date_of_birth") ?? "") || null,
+          gender: String(form.get("gender") ?? ""),
         }),
       });
       setMessage(
@@ -98,6 +102,26 @@ export function ProfileForm({ profile }: { profile: Profile }) {
             error={fieldErrors.full_name}
             required
           />
+          <FormField
+            name="date_of_birth"
+            label="Date of birth"
+            type="date"
+            defaultValue={profile.date_of_birth ?? ""}
+            max={new Date().toISOString().slice(0, 10)}
+            autoComplete="bday"
+            error={fieldErrors.date_of_birth}
+          />
+          <div className="form-field">
+            <label className="form-field__label" htmlFor="profile-gender">Gender</label>
+            <select className="form-field__control" id="profile-gender" name="gender" defaultValue={profile.gender} aria-invalid={fieldErrors.gender ? true : undefined} aria-describedby={fieldErrors.gender ? "profile-gender-error" : undefined}>
+              <option value="">Select an option</option>
+              <option value="female">Female</option>
+              <option value="male">Male</option>
+              <option value="other">Other</option>
+              <option value="prefer_not_to_say">Prefer not to say</option>
+            </select>
+            {fieldErrors.gender ? <p className="validation-message" id="profile-gender-error" role="alert"><span aria-hidden="true">!</span>{fieldErrors.gender}</p> : null}
+          </div>
           <FormField
             name="email"
             label="Email address"

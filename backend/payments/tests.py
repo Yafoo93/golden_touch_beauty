@@ -9,8 +9,8 @@ from branches.models import Branch
 from orders.models import Order, OrderItem
 from products.models import Product, ProductCategory, ProductVariant
 
-from .models import Payment, Receipt
-from .services import issue_receipt_for_verified_payment
+from .models import Invoice, Payment, Receipt
+from .services import issue_invoice_for_source, issue_receipt_for_verified_payment
 
 
 User = get_user_model()
@@ -99,6 +99,9 @@ class ReceiptWorkflowTests(TestCase):
 
         self.assertEqual(receipt.pk, repeated.pk)
         self.assertEqual(Receipt.objects.count(), 1)
+        invoice = Invoice.objects.get(order=self.order)
+        self.assertEqual(invoice.status, Invoice.Status.PAID)
+        self.assertEqual(invoice.paid_at, self.payment.paid_at)
         receipt.refresh_from_db()
         self.assertIsNotNone(receipt.email_sent_at)
         self.assertEqual(receipt.source_reference, self.order.reference)
@@ -109,6 +112,18 @@ class ReceiptWorkflowTests(TestCase):
             f"/account/receipts/{receipt.reference}",
             mail.outbox[0].body,
         )
+
+    def test_invoice_creation_is_idempotent_and_snapshots_source(self):
+        invoice = issue_invoice_for_source(self.order)
+        repeated = issue_invoice_for_source(self.order)
+
+        self.assertEqual(invoice.pk, repeated.pk)
+        self.assertEqual(Invoice.objects.count(), 1)
+        self.assertEqual(invoice.status, Invoice.Status.OPEN)
+        self.assertEqual(invoice.source_type, "order")
+        self.assertEqual(invoice.source_reference, self.order.reference)
+        self.assertEqual(invoice.total_amount, self.order.total_amount)
+        self.assertEqual(invoice.line_items[0]["description"], "Receipt Face Serum (30 ml)")
 
     def test_pending_or_wrong_amount_payment_cannot_issue_receipt(self):
         self.payment.status = Payment.Status.PENDING
@@ -123,7 +138,7 @@ class ReceiptWorkflowTests(TestCase):
             issue_receipt_for_verified_payment(self.payment)
         self.assertEqual(Receipt.objects.count(), 0)
 
-    def test_customer_can_view_only_their_receipt(self):
+    def test_customer_cannot_view_another_customers_receipt_or_payment_details(self):
         with self.captureOnCommitCallbacks(execute=True):
             receipt = issue_receipt_for_verified_payment(self.payment)
         self.client.force_login(self.customer)
@@ -139,3 +154,5 @@ class ReceiptWorkflowTests(TestCase):
             reverse("payments:receipt-detail", args=[receipt.reference])
         )
         self.assertEqual(hidden.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertNotIn(self.payment.reference, hidden.content.decode())
+        self.assertNotIn(self.payment.provider_reference, hidden.content.decode())

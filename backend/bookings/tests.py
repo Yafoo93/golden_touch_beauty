@@ -9,7 +9,10 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
 
-from branches.models import Branch
+from branches.models import Branch, BranchStaffAssignment
+from payments.models import Invoice
+from notifications.jobs import process_email_job
+from notifications.models import EmailJob, Notification
 from services.models import Service, ServiceBranchAvailability, ServiceCategory
 
 from .models import Booking, BookingBlock, BookingHistory
@@ -130,6 +133,12 @@ class BookingWorkflowApiTests(TestCase):
         self.assertEqual(first.json()["total_duration_minutes"], 150)
         self.assertEqual(len(first.json()["services"]), 2)
         self.assertEqual(Booking.objects.count(), 1)
+        invoice = Invoice.objects.get()
+        self.assertEqual(invoice.source_reference, first.json()["reference"])
+        self.assertEqual(invoice.branch, self.branch)
+        self.assertEqual(invoice.customer, self.customer)
+        self.assertEqual(invoice.total_amount, 350)
+        self.assertEqual(len(invoice.line_items), 2)
         self.assertEqual(BookingHistory.objects.get().action, "created")
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, [self.customer.email])
@@ -192,6 +201,27 @@ class BookingWorkflowApiTests(TestCase):
         )
         self.assertEqual(first.status_code, status.HTTP_201_CREATED)
         self.assertEqual(second.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_past_confirmed_booking_does_not_block_a_new_request(self):
+        self.client.force_login(self.customer)
+        first = self.client.post(
+            reverse("bookings:customer-list"),
+            self.payload(service_selections=[{"service_id": str(self.facial.id)}]),
+            content_type="application/json",
+        )
+        self.assertEqual(first.status_code, status.HTTP_201_CREATED)
+        Booking.objects.filter(reference=first.json()["reference"]).update(
+            status=Booking.Status.CONFIRMED,
+            preferred_start=timezone.now() - timedelta(days=1),
+        )
+
+        second = self.client.post(
+            reverse("bookings:customer-list"),
+            self.payload(service_selections=[{"service_id": str(self.facial.id)}]),
+            content_type="application/json",
+        )
+
+        self.assertEqual(second.status_code, status.HTTP_201_CREATED)
 
     def test_pay_at_clinic_must_be_allowed_by_every_service(self):
         self.hair.allows_pay_at_clinic = False
@@ -291,6 +321,69 @@ class BookingWorkflowApiTests(TestCase):
         self.assertIn("Appointment cancelled", mail.outbox[-1].subject)
         self.assertNotIn("Internal scheduling note", mail.outbox[-1].body)
 
+    def test_confirmation_schedules_24_and_6_hour_reminders(self):
+        self.client.force_login(self.customer)
+        created = self.client.post(
+            reverse("bookings:customer-list"),
+            self.payload(service_selections=[{"service_id": str(self.facial.id)}]),
+            content_type="application/json",
+        ).json()
+
+        self.client.force_login(self.owner)
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                reverse("bookings:management-action", args=[created["reference"]]),
+                {"action": "confirm"},
+                content_type="application/json",
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        booking = Booking.objects.get(reference=created["reference"])
+        reminders = EmailJob.objects.filter(
+            job_type="booking_reminder", object_id=booking.pk
+        ).order_by("event")
+        self.assertEqual(list(reminders.values_list("event", flat=True)), ["24", "6"])
+        for reminder in reminders:
+            expected = booking.preferred_start - timedelta(hours=int(reminder.event))
+            self.assertEqual(reminder.next_attempt_at, expected)
+
+        reminder = reminders.get(event="24")
+        reminder.next_attempt_at = timezone.now()
+        reminder.save(update_fields=["next_attempt_at", "updated_at"])
+        self.assertTrue(process_email_job(reminder.pk))
+        self.assertIn("24 hours to go", mail.outbox[-1].subject)
+        self.assertTrue(
+            Notification.objects.filter(
+                recipient=self.customer,
+                event_key__contains=":reminder:24:",
+            ).exists()
+        )
+
+    def test_cancelled_booking_reminder_is_safely_skipped(self):
+        self.client.force_login(self.customer)
+        created = self.client.post(
+            reverse("bookings:customer-list"),
+            self.payload(service_selections=[{"service_id": str(self.facial.id)}]),
+            content_type="application/json",
+        ).json()
+        booking = Booking.objects.get(reference=created["reference"])
+        booking.status = Booking.Status.CONFIRMED
+        booking.save(update_fields=["status", "updated_at"])
+        from .reminders import schedule_booking_reminders
+
+        reminder = schedule_booking_reminders(booking)[0]
+        booking.status = Booking.Status.CANCELLED
+        booking.save(update_fields=["status", "updated_at"])
+        reminder.next_attempt_at = timezone.now()
+        reminder.save(update_fields=["next_attempt_at", "updated_at"])
+        email_count = len(mail.outbox)
+
+        self.assertTrue(process_email_job(reminder.pk))
+        self.assertEqual(len(mail.outbox), email_count)
+        self.assertFalse(
+            Notification.objects.filter(event_key__contains=":reminder:").exists()
+        )
+
     @patch(
         "bookings.emails.send_mail",
         side_effect=RuntimeError("Temporary email provider failure"),
@@ -341,6 +434,79 @@ class BookingWorkflowApiTests(TestCase):
         )
         self.assertEqual(response.json()["results"][0]["status"], "pending")
 
+    def test_receptionist_cannot_receive_sensitive_booking_intake(self):
+        receptionist = User.objects.create_user(
+            email="booking-reception@example.com", phone_number="+233241000299",
+            full_name="Booking Receptionist", password="ReceptionPass123!", is_staff=True,
+        )
+        BranchStaffAssignment.objects.create(
+            branch=self.branch, staff=receptionist,
+            roles=[BranchStaffAssignment.Role.RECEPTIONIST], assigned_by=self.owner,
+        )
+        self.client.force_login(self.customer)
+        created = self.client.post(
+            reverse("bookings:customer-list"), self.payload(allergies="Private allergy", conditions="Private condition"),
+            content_type="application/json",
+        ).json()
+
+        self.client.force_login(receptionist)
+        response = self.client.get(reverse("bookings:management-detail", args=[created["reference"]]))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.json()["can_view_sensitive_intake"])
+        for field in ("allergies", "conditions", "previous_treatments", "notes"):
+            self.assertNotIn(field, response.json())
+
+    def test_stock_manager_cannot_access_booking_operations(self):
+        stock_manager = User.objects.create_user(
+            email="booking-stock@example.com", phone_number="+233241000298",
+            full_name="Booking Stock Manager", password="StockPass123!", is_staff=True,
+        )
+        BranchStaffAssignment.objects.create(
+            branch=self.branch, staff=stock_manager,
+            roles=[BranchStaffAssignment.Role.STOCK_MANAGER], assigned_by=self.owner,
+        )
+        self.client.force_login(stock_manager)
+        response = self.client.get(reverse("bookings:management-list"))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_customer_can_filter_appointments_by_status(self):
+        self.client.force_login(self.customer)
+        first = self.client.post(
+            reverse("bookings:customer-list"),
+            self.payload(service_selections=[{"service_id": str(self.facial.id)}]),
+            content_type="application/json",
+        )
+        self.assertEqual(first.status_code, status.HTTP_201_CREATED)
+        confirmed = Booking.objects.get(reference=first.json()["reference"])
+        confirmed.status = Booking.Status.CONFIRMED
+        confirmed.save(update_fields=["status", "updated_at"])
+        Booking.objects.create(
+            branch=self.branch,
+            customer=self.customer,
+            status=Booking.Status.CANCELLED,
+            preferred_start=self.preferred_start + timedelta(days=2),
+            recipient_name=self.customer.full_name,
+            recipient_phone=self.customer.phone_number,
+        )
+
+        response = self.client.get(
+            reverse("bookings:customer-list"), {"status": "confirmed"}
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()["count"], 1)
+        self.assertEqual(
+            response.json()["results"][0]["reference"], confirmed.reference
+        )
+
+    def test_customer_booking_filter_rejects_unknown_status(self):
+        self.client.force_login(self.customer)
+        response = self.client.get(
+            reverse("bookings:customer-list"), {"status": "unknown"}
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_customer_cannot_view_another_customers_booking(self):
         self.client.force_login(self.customer)
         created = self.client.post(
@@ -359,3 +525,34 @@ class BookingWorkflowApiTests(TestCase):
             reverse("bookings:customer-detail", args=[created["reference"]])
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_customer_history_excludes_internal_management_details(self):
+        booking = Booking.objects.create(
+            branch=self.branch,
+            customer=self.customer,
+            status=Booking.Status.CANCELLED,
+            preferred_start=self.preferred_start,
+            recipient_name=self.customer.full_name,
+            recipient_phone=self.customer.phone_number,
+        )
+        BookingHistory.objects.create(
+            booking=booking,
+            action="cancel",
+            from_status=Booking.Status.CONFIRMED,
+            to_status=Booking.Status.CANCELLED,
+            reason="Internal staffing shortage and private note",
+            actor=self.owner,
+            metadata={"internal": "do not expose"},
+        )
+        self.client.force_login(self.customer)
+
+        response = self.client.get(
+            reverse("bookings:customer-detail", args=[booking.reference])
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        history = response.json()["history"][0]
+        self.assertNotIn("reason", history)
+        self.assertNotIn("metadata", history)
+        self.assertNotIn("actor_name", history)
+        self.assertNotIn("private note", str(response.json()))

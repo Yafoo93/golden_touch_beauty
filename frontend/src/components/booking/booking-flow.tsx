@@ -20,6 +20,27 @@ type CurrentUser = {
 };
 type CreatedBooking = { reference: string; status: string };
 
+function bookingErrorMessage(error: unknown) {
+  if (!(error instanceof ApiError)) {
+    return error instanceof Error
+      ? error.message
+      : "Your appointment could not be submitted.";
+  }
+  if (!error.details || typeof error.details !== "object") return error.message;
+  const messages = Object.entries(error.details as Record<string, unknown>).flatMap(
+    ([field, value]) => {
+      const values = Array.isArray(value) ? value : [value];
+      return values.map((message) => {
+        const label = field === "non_field_errors"
+          ? "Booking"
+          : field.replaceAll("_", " ");
+        return `${label}: ${String(message)}`;
+      });
+    },
+  );
+  return messages.length ? messages.join(" ") : error.message;
+}
+
 export function BookingFlow({
   branchCode,
   branchName,
@@ -140,7 +161,8 @@ export function BookingFlow({
         `/book/confirmation/${encodeURIComponent(created.reference)}`,
       );
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Your appointment could not be submitted.");
+      setError(bookingErrorMessage(caught));
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } finally {
       setSubmitting(false);
     }

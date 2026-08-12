@@ -6,10 +6,11 @@ from django.utils import timezone
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from branches.models import Branch
+from branches.models import Branch, BranchStaffAssignment
 from accounts.models import User
 from services.models import Service
 from branches.permissions import (
@@ -17,14 +18,16 @@ from branches.permissions import (
     IsOwnerOrAssignedBranchStaff,
     can_access_branch,
 )
+from notifications.jobs import enqueue_email_job
 
 from .models import Booking, BookingBlock, BookingHistory
-from .emails import send_booking_confirmation_email, send_booking_update_email
+from .reminders import schedule_booking_reminders
 from .serializers import (
     BookingActionSerializer,
     BookingBlockSerializer,
     BookingCreateSerializer,
     BookingSerializer,
+    CustomerBookingSerializer,
 )
 
 
@@ -38,10 +41,20 @@ class CustomerBookingListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):
-        return BookingCreateSerializer if self.request.method == "POST" else BookingSerializer
+        return (
+            BookingCreateSerializer
+            if self.request.method == "POST"
+            else CustomerBookingSerializer
+        )
 
     def get_queryset(self):
-        return booking_queryset().filter(customer=self.request.user)
+        queryset = booking_queryset().filter(customer=self.request.user)
+        requested_status = self.request.query_params.get("status", "").strip()
+        if requested_status:
+            if requested_status not in Booking.Status.values:
+                raise ValidationError({"status": "Select a valid booking status."})
+            queryset = queryset.filter(status=requested_status)
+        return queryset
 
     def create(self, request, *args, **kwargs):
         request_id = request.data.get("client_request_id")
@@ -57,19 +70,23 @@ class CustomerBookingListCreateView(generics.ListCreateAPIView):
             else None
         )
         if existing:
-            return Response(BookingSerializer(existing).data)
+            return Response(CustomerBookingSerializer(existing).data)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         booking = serializer.save()
-        send_booking_confirmation_email(booking)
+        enqueue_email_job(
+            job_type="booking_confirmation",
+            object_id=booking.pk,
+            unique_key=f"booking:{booking.pk}:confirmation",
+        )
         return Response(
-            BookingSerializer(booking_queryset().get(pk=booking.pk)).data,
+            CustomerBookingSerializer(booking_queryset().get(pk=booking.pk)).data,
             status=status.HTTP_201_CREATED,
         )
 
 
 class CustomerBookingDetailView(generics.RetrieveAPIView):
-    serializer_class = BookingSerializer
+    serializer_class = CustomerBookingSerializer
     permission_classes = [IsAuthenticated]
     lookup_field = "reference"
 
@@ -115,12 +132,19 @@ class CustomerBookingProposalView(APIView):
         )
         if accepted:
             transaction.on_commit(
-                lambda booking_id=booking.pk: send_booking_update_email(
-                    booking_queryset().get(pk=booking_id),
-                    "proposed_time_accepted",
+                lambda booking_id=booking.pk, updated=str(booking.updated_at): (
+                    enqueue_email_job(
+                        job_type="booking_update",
+                        object_id=booking_id,
+                        event="proposed_time_accepted",
+                        unique_key=f"booking:{booking_id}:proposed_time_accepted:{updated}",
+                    ),
+                    schedule_booking_reminders(Booking.objects.get(pk=booking_id)),
                 )
             )
-        return Response(BookingSerializer(booking_queryset().get(pk=booking.pk)).data)
+        return Response(
+            CustomerBookingSerializer(booking_queryset().get(pk=booking.pk)).data
+        )
 
 
 class BookingAvailabilityView(APIView):
@@ -189,6 +213,7 @@ class ManagementBookingListCreateView(
     BranchAccessQuerysetMixin, generics.ListCreateAPIView
 ):
     permission_classes = [IsOwnerOrAssignedBranchStaff]
+    required_branch_roles = (BranchStaffAssignment.Role.MANAGER, BranchStaffAssignment.Role.RECEPTIONIST, BranchStaffAssignment.Role.SERVICE_PROVIDER)
     queryset = booking_queryset()
 
     def get_serializer_class(self):
@@ -219,10 +244,14 @@ class ManagementBookingListCreateView(
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         branch = serializer.validated_data["_branch"]
-        if not can_access_branch(request.user, branch):
+        if not can_access_branch(request.user, branch, self.required_branch_roles):
             raise PermissionDenied("You are not assigned to this branch.")
         booking = serializer.save()
-        send_booking_confirmation_email(booking)
+        enqueue_email_job(
+            job_type="booking_confirmation",
+            object_id=booking.pk,
+            unique_key=f"booking:{booking.pk}:confirmation",
+        )
         return Response(
             BookingSerializer(booking_queryset().get(pk=booking.pk)).data,
             status=status.HTTP_201_CREATED,
@@ -231,6 +260,7 @@ class ManagementBookingListCreateView(
 
 class ManagementBookingOptionsView(APIView):
     permission_classes = [IsAuthenticated, IsOwnerOrAssignedBranchStaff]
+    required_branch_roles = ManagementBookingListCreateView.required_branch_roles
 
     def get(self, request):
         if request.user.is_superuser:
@@ -238,7 +268,7 @@ class ManagementBookingOptionsView(APIView):
         else:
             from branches.permissions import get_accessible_branch_ids
             branches = Branch.objects.filter(
-                id__in=get_accessible_branch_ids(request.user), is_active=True
+                id__in=get_accessible_branch_ids(request.user, self.required_branch_roles), is_active=True
             )
         services = Service.objects.filter(
             branch_availability__branch__in=branches,
@@ -285,12 +315,14 @@ class ManagementBookingDetailView(
 ):
     serializer_class = BookingSerializer
     permission_classes = [IsOwnerOrAssignedBranchStaff]
+    required_branch_roles = ManagementBookingListCreateView.required_branch_roles
     queryset = booking_queryset()
     lookup_field = "reference"
 
 
 class ManagementBookingActionView(APIView):
     permission_classes = [IsOwnerOrAssignedBranchStaff]
+    required_branch_roles = ManagementBookingListCreateView.required_branch_roles
 
     transitions = {
         "confirm": Booking.Status.CONFIRMED,
@@ -327,7 +359,7 @@ class ManagementBookingActionView(APIView):
         booking = Booking.objects.select_for_update().filter(reference=reference).first()
         if not booking:
             return Response({"detail": "Booking was not found."}, status=404)
-        if not can_access_branch(request.user, booking.branch):
+        if not can_access_branch(request.user, booking.branch, self.required_branch_roles):
             return Response({"detail": "You are not assigned to this branch."}, status=403)
         serializer = BookingActionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -370,11 +402,19 @@ class ManagementBookingActionView(APIView):
         }
         if action in email_events:
             transaction.on_commit(
-                lambda booking_id=booking.pk, event=email_events[action]: (
-                    send_booking_update_email(
-                        booking_queryset().get(pk=booking_id),
-                        event,
+                lambda booking_id=booking.pk, event=email_events[action], updated=str(booking.updated_at): (
+                    enqueue_email_job(
+                        job_type="booking_update",
+                        object_id=booking_id,
+                        event=event,
+                        unique_key=f"booking:{booking_id}:{event}:{updated}",
                     )
+                )
+            )
+        if action == "confirm":
+            transaction.on_commit(
+                lambda booking_id=booking.pk: schedule_booking_reminders(
+                    Booking.objects.get(pk=booking_id)
                 )
             )
         return Response(BookingSerializer(booking_queryset().get(pk=booking.pk)).data)
@@ -385,11 +425,12 @@ class ManagementBookingBlockListCreateView(
 ):
     serializer_class = BookingBlockSerializer
     permission_classes = [IsOwnerOrAssignedBranchStaff]
+    required_branch_roles = (BranchStaffAssignment.Role.MANAGER, BranchStaffAssignment.Role.RECEPTIONIST)
     queryset = BookingBlock.objects.select_related("branch")
 
     def perform_create(self, serializer):
         branch = serializer.validated_data["branch"]
-        if not can_access_branch(self.request.user, branch):
+        if not can_access_branch(self.request.user, branch, self.required_branch_roles):
             raise PermissionDenied("You are not assigned to this branch.")
         serializer.save(created_by=self.request.user, updated_by=self.request.user)
 
@@ -399,10 +440,11 @@ class ManagementBookingBlockDetailView(
 ):
     serializer_class = BookingBlockSerializer
     permission_classes = [IsOwnerOrAssignedBranchStaff]
+    required_branch_roles = ManagementBookingBlockListCreateView.required_branch_roles
     queryset = BookingBlock.objects.select_related("branch")
 
     def perform_update(self, serializer):
         branch = serializer.validated_data.get("branch", serializer.instance.branch)
-        if not can_access_branch(self.request.user, branch):
+        if not can_access_branch(self.request.user, branch, self.required_branch_roles):
             raise PermissionDenied("You are not assigned to this branch.")
         serializer.save(updated_by=self.request.user)

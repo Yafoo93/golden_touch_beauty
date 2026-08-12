@@ -1,11 +1,10 @@
-import logging
+import hashlib
 from urllib.parse import quote, unquote
 
 from django.conf import settings
 from django.contrib.auth import login, logout
 from django.contrib.auth.tokens import default_token_generator
 from django.core import signing
-from django.core.mail import send_mail
 from django.middleware.csrf import get_token
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
@@ -19,6 +18,7 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from auditlog.services import actor_role_for, client_device, client_ip, record_event
+from notifications.jobs import enqueue_email_job
 
 from .models import User
 from .serializers import (
@@ -33,13 +33,16 @@ from .serializers import (
 )
 
 
-logger = logging.getLogger("golden_touch.auth")
 PASSWORD_RESET_RESPONSE = {
     "detail": "If an active account uses that email address, password-reset instructions have been sent."
 }
 EMAIL_VERIFICATION_RESPONSE = {
     "detail": "If an unverified active account uses that email address, a verification link has been sent."
 }
+
+
+def email_job_key(prefix, value):
+    return f"{prefix}:{hashlib.sha256(value.encode()).hexdigest()}"
 
 
 def enforce_csrf(request):
@@ -65,6 +68,11 @@ class CurrentUserView(APIView):
             "full_name": request.user.full_name,
             "email": request.user.email,
             "phone_number": request.user.phone_number,
+            "date_of_birth": (
+                request.user.date_of_birth.isoformat()
+                if request.user.date_of_birth else None
+            ),
+            "gender": request.user.gender,
         }
         serializer = CustomerProfileUpdateSerializer(
             request.user,
@@ -77,6 +85,8 @@ class CurrentUserView(APIView):
             "full_name": user.full_name,
             "email": user.email,
             "phone_number": user.phone_number,
+            "date_of_birth": user.date_of_birth.isoformat() if user.date_of_birth else None,
+            "gender": user.gender,
         }
         record_event(
             action="auth.profile_updated",
@@ -196,34 +206,30 @@ class PasswordResetRequestView(APIView):
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             token = default_token_generator.make_token(user)
             reset_url = f"{settings.FRONTEND_URL.rstrip('/')}/reset-password/{uid}.{token}"
-            try:
-                send_mail(
-                    subject="Reset your Golden Touch password",
-                    message=(
+            enqueue_email_job(
+                job_type="raw",
+                unique_key=email_job_key("password-reset", reset_url),
+                payload={
+                    "subject": "Reset your Golden Touch password",
+                    "message": (
                         f"Hello {user.full_name},\n\n"
                         "We received a request to reset your Golden Touch password. "
                         f"Use this one-time link:\n\n{reset_url}\n\n"
                         "If you did not request this, you can ignore this email."
                     ),
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[user.email],
-                    fail_silently=False,
-                )
-            except Exception:
-                logger.exception(
-                    "password_reset_email_failed",
-                    extra={"user_id": str(user.pk)},
-                )
-            else:
-                record_event(
-                    action="auth.password_reset_requested",
-                    record_type="user",
-                    record_id=user.pk,
-                    actor=user,
-                    actor_role=actor_role_for(user),
-                    ip_address=client_ip(request),
-                    device_identifier=client_device(request),
-                )
+                    "from_email": settings.DEFAULT_FROM_EMAIL,
+                    "recipient_list": [user.email],
+                },
+            )
+            record_event(
+                action="auth.password_reset_requested",
+                record_type="user",
+                record_id=user.pk,
+                actor=user,
+                actor_role=actor_role_for(user),
+                ip_address=client_ip(request),
+                device_identifier=client_device(request),
+            )
 
         return Response(PASSWORD_RESET_RESPONSE)
 
@@ -293,34 +299,30 @@ class EmailVerificationResendView(APIView):
                 f"{settings.FRONTEND_URL.rstrip('/')}/verify-email/"
                 f"{quote(token, safe='')}"
             )
-            try:
-                send_mail(
-                    subject="Verify your Golden Touch email address",
-                    message=(
+            enqueue_email_job(
+                job_type="raw",
+                unique_key=email_job_key("email-verification", verification_url),
+                payload={
+                    "subject": "Verify your Golden Touch email address",
+                    "message": (
                         f"Hello {user.full_name},\n\n"
                         "Verify your email address using this secure link:\n\n"
                         f"{verification_url}\n\n"
                         "If you did not create this account, you can ignore this email."
                     ),
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[user.email],
-                    fail_silently=False,
-                )
-            except Exception:
-                logger.exception(
-                    "email_verification_delivery_failed",
-                    extra={"user_id": str(user.pk)},
-                )
-            else:
-                record_event(
-                    action="auth.email_verification_requested",
-                    record_type="user",
-                    record_id=user.pk,
-                    actor=user,
-                    actor_role=actor_role_for(user),
-                    ip_address=client_ip(request),
-                    device_identifier=client_device(request),
-                )
+                    "from_email": settings.DEFAULT_FROM_EMAIL,
+                    "recipient_list": [user.email],
+                },
+            )
+            record_event(
+                action="auth.email_verification_requested",
+                record_type="user",
+                record_id=user.pk,
+                actor=user,
+                actor_role=actor_role_for(user),
+                ip_address=client_ip(request),
+                device_identifier=client_device(request),
+            )
 
         return Response(EMAIL_VERIFICATION_RESPONSE)
 

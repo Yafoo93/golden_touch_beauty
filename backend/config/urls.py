@@ -16,6 +16,7 @@ urlpatterns = [
 
     path("api/v1/", include("core.urls")),
     path("api/v1/auth/", include("accounts.urls")),
+    path("api/v1/account/", include("customers.urls")),
     path("api/v1/branches/", include("branches.urls")),
     path("api/v1/services/", include("services.urls")),
     path("api/v1/products/", include("products.urls")),
@@ -23,6 +24,8 @@ urlpatterns = [
     path("api/v1/bookings/", include("bookings.urls")),
     path("api/v1/orders/", include("orders.urls")),
     path("api/v1/payments/", include("payments.urls")),
+    path("api/v1/notifications/", include("notifications.urls")),
+    path("api/v1/pos/", include("pos.urls")),
 
     path(
         "api/schema/",

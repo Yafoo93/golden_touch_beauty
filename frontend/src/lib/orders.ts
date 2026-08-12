@@ -44,3 +44,21 @@ export type CustomerOrder = {
   items: CheckoutItem[];
   created_at: string;
 };
+
+export type CustomerOrderPayment = {
+  reference: string;
+  provider: string;
+  method: string;
+  status: string;
+  currency: string;
+  amount: string;
+  paid_at: string | null;
+  receipt_reference: string | null;
+  created_at: string;
+};
+
+export type CustomerOrderDetail = CustomerOrder & {
+  payments: CustomerOrderPayment[];
+  invoice_reference: string | null;
+  updated_at: string;
+};

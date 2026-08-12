@@ -2,8 +2,8 @@ from django.db import transaction
 from django.utils import timezone
 
 from inventory.models import BranchInventory, StockMovement
+from notifications.jobs import enqueue_email_job
 
-from .emails import send_order_status_email
 from .models import Order, StockReservation
 
 
@@ -22,11 +22,11 @@ ORDER_STATUS_TRANSITIONS = {
 
 def _notify_status_after_commit(order_id, event):
     transaction.on_commit(
-        lambda: send_order_status_email(
-            Order.objects.select_related("customer", "branch")
-            .prefetch_related("items")
-            .get(pk=order_id),
-            event,
+        lambda: enqueue_email_job(
+            job_type="order_status",
+            object_id=order_id,
+            event=event,
+            unique_key=f"order:{order_id}:{event}",
         )
     )
 

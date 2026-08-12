@@ -10,7 +10,7 @@ from rest_framework import serializers
 
 from core.phone import normalize_phone_number
 from customers.models import CustomerConsent
-from branches.permissions import get_staff_portal_access
+from branches.permissions import get_management_modules, get_staff_portal_access
 
 
 User = get_user_model()
@@ -87,16 +87,25 @@ class RegistrationSerializer(serializers.Serializer):
 
 class CurrentUserSerializer(serializers.ModelSerializer):
     portal_access = serializers.SerializerMethodField()
+    management_modules = serializers.SerializerMethodField()
     post_login_path = serializers.SerializerMethodField()
 
     def get_portal_access(self, obj):
         return get_staff_portal_access(obj)
+
+    def get_management_modules(self, obj):
+        return get_management_modules(obj)
 
     def get_post_login_path(self, obj):
         if not obj.is_staff and not obj.is_superuser:
             return "/account"
         access = get_staff_portal_access(obj)
         if "management" in access:
+            modules = get_management_modules(obj)
+            if "dashboard" in modules:
+                return "/management"
+            if "inventory" in modules:
+                return "/management/inventory"
             return "/management"
         if "pos" in access:
             return "/pos"
@@ -109,8 +118,11 @@ class CurrentUserSerializer(serializers.ModelSerializer):
             "full_name",
             "email",
             "phone_number",
+            "date_of_birth",
+            "gender",
             "email_verified_at",
             "portal_access",
+            "management_modules",
             "post_login_path",
             "is_staff",
             "is_superuser",
@@ -119,6 +131,11 @@ class CurrentUserSerializer(serializers.ModelSerializer):
 
 
 class CustomerProfileUpdateSerializer(serializers.ModelSerializer):
+    def validate_date_of_birth(self, value):
+        if value and value > timezone.localdate():
+            raise serializers.ValidationError("Date of birth cannot be in the future.")
+        return value
+
     def validate_full_name(self, value):
         normalized = " ".join(value.split())
         if len(normalized) < 2:
@@ -162,7 +179,7 @@ class CustomerProfileUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("full_name", "email", "phone_number")
+        fields = ("full_name", "email", "phone_number", "date_of_birth", "gender")
         extra_kwargs = {
             "full_name": {"required": True},
             "email": {"required": True},

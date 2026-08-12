@@ -176,6 +176,25 @@ class LoginApiTests(TestCase):
         self.assertEqual(response.json()["user"]["post_login_path"], "/account")
         self.assertEqual(response.json()["user"]["portal_access"], [])
 
+    def test_current_profile_is_always_the_authenticated_customers_profile(self):
+        other = User.objects.create_user(
+            email="private-profile@example.com",
+            phone_number="+233205550177",
+            full_name="Private Profile Customer",
+            password="SafeCustomerPass!2026",
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            reverse("accounts:me"),
+            {"user_id": str(other.pk)},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()["user"]["id"], str(self.user.pk))
+        self.assertEqual(response.json()["user"]["email"], self.user.email)
+        self.assertNotIn(other.email, str(response.json()))
+
     def test_customer_can_update_profile_without_updating_permissions(self):
         self.user.email_verified_at = timezone.now()
         self.user.save(update_fields=["email_verified_at", "updated_at"])
@@ -186,6 +205,8 @@ class LoginApiTests(TestCase):
                 "full_name": "Updated Customer Name",
                 "email": "updated-customer@example.com",
                 "phone_number": "020 555 0199",
+                "date_of_birth": "1994-06-18",
+                "gender": "female",
                 "is_staff": True,
                 "is_superuser": True,
             },
@@ -197,10 +218,24 @@ class LoginApiTests(TestCase):
         self.assertEqual(self.user.full_name, "Updated Customer Name")
         self.assertEqual(self.user.email, "updated-customer@example.com")
         self.assertEqual(self.user.phone_number, "+233205550199")
+        self.assertEqual(str(self.user.date_of_birth), "1994-06-18")
+        self.assertEqual(self.user.gender, User.Gender.FEMALE)
         self.assertFalse(self.user.is_staff)
         self.assertFalse(self.user.is_superuser)
         self.assertIsNone(self.user.email_verified_at)
         self.assertEqual(response.json()["user"]["post_login_path"], "/account")
+
+    def test_profile_update_rejects_future_birth_date_and_invalid_gender(self):
+        self.client.force_login(self.user)
+        response = self.client.patch(
+            reverse("accounts:me"),
+            {"date_of_birth": "2999-01-01", "gender": "unsupported"},
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("date_of_birth", response.json()["error"]["details"])
+        self.assertIn("gender", response.json()["error"]["details"])
 
     def test_profile_update_rejects_another_users_email_and_phone(self):
         other = User.objects.create_user(
@@ -248,6 +283,13 @@ class LoginApiTests(TestCase):
             password="SafeCustomerPass!2026",
             is_staff=True,
         )
+        stock_manager = User.objects.create_user(
+            email="routing-stock@example.com",
+            phone_number="+233241234575",
+            full_name="Routing Stock Manager",
+            password="SafeCustomerPass!2026",
+            is_staff=True,
+        )
         BranchStaffAssignment.objects.create(
             branch=branch,
             staff=cashier,
@@ -257,6 +299,11 @@ class LoginApiTests(TestCase):
             branch=branch,
             staff=manager,
             roles=[BranchStaffAssignment.Role.MANAGER],
+        )
+        BranchStaffAssignment.objects.create(
+            branch=branch,
+            staff=stock_manager,
+            roles=[BranchStaffAssignment.Role.STOCK_MANAGER],
         )
 
         cashier_response = self.client.post(
@@ -269,10 +316,19 @@ class LoginApiTests(TestCase):
             {"identifier": manager.email, "password": "SafeCustomerPass!2026"},
             content_type="application/json",
         )
+        stock_response = self.client.post(
+            reverse("accounts:login"),
+            {"identifier": stock_manager.email, "password": "SafeCustomerPass!2026"},
+            content_type="application/json",
+        )
         self.assertEqual(cashier_response.json()["user"]["post_login_path"], "/pos")
         self.assertEqual(cashier_response.json()["user"]["portal_access"], ["pos"])
+        self.assertEqual(cashier_response.json()["user"]["management_modules"], [])
         self.assertEqual(manager_response.json()["user"]["post_login_path"], "/management")
         self.assertEqual(manager_response.json()["user"]["portal_access"], ["management", "pos"])
+        self.assertIn("bookings", manager_response.json()["user"]["management_modules"])
+        self.assertEqual(stock_response.json()["user"]["post_login_path"], "/management/inventory")
+        self.assertEqual(stock_response.json()["user"]["management_modules"], ["inventory"])
 
     def test_csrf_is_required_when_checks_are_enabled(self):
         from django.test import Client

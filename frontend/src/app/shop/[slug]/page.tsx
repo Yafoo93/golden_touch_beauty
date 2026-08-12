@@ -3,8 +3,9 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 
 import { ProductPurchasePanel } from "@/components/shop/product-purchase-panel";
+import { ProductCard } from "@/components/catalogue/product-card";
 import { ButtonLink } from "@/components/ui/button";
-import { getProductDetail } from "@/lib/products";
+import { getProductDetail, getRelatedProducts } from "@/lib/products";
 
 export async function generateMetadata({
   params,
@@ -25,6 +26,7 @@ export default async function ProductDetailPage({
   const { slug } = await params;
   const product = await getProductDetail(slug);
   if (!product) notFound();
+  const relatedProducts = await getRelatedProducts(product);
   const images = product.images.length
     ? product.images
     : ["/images/hero2.jpeg"];
@@ -74,6 +76,21 @@ export default async function ProductDetailPage({
           </ButtonLink>
         </div>
       </section>
+
+      {relatedProducts.length ? (
+        <section className="related-catalogue" aria-labelledby="related-products-title">
+          <header className="related-catalogue__heading">
+            <p>You may also like</p>
+            <h2 id="related-products-title">Related products</h2>
+            <span>More products from the {product.category} collection.</span>
+          </header>
+          <div className="catalogue-grid">
+            {relatedProducts.map((relatedProduct) => (
+              <ProductCard key={relatedProduct.slug} {...relatedProduct} />
+            ))}
+          </div>
+        </section>
+      ) : null}
     </main>
   );
 }

@@ -17,6 +17,10 @@ def receipt_reference():
     return f"GTR-{timezone.localdate():%y%m%d}-{secrets.token_hex(3).upper()}"
 
 
+def invoice_reference():
+    return f"GTI-{timezone.localdate():%y%m%d}-{secrets.token_hex(3).upper()}"
+
+
 class Payment(BaseModel, BranchScopedModel):
     class Status(models.TextChoices):
         PENDING = "pending", "Pending"
@@ -80,6 +84,80 @@ class Payment(BaseModel, BranchScopedModel):
 
     def __str__(self):
         return f"{self.reference} ({self.get_status_display()})"
+
+
+class Invoice(BaseModel, BranchScopedModel):
+    """Customer-facing amount-due snapshot for one booking or order."""
+
+    class Status(models.TextChoices):
+        OPEN = "open", "Open"
+        PAID = "paid", "Paid"
+        VOID = "void", "Void"
+        EXPIRED = "expired", "Expired"
+
+    reference = models.CharField(
+        max_length=24, unique=True, default=invoice_reference, editable=False
+    )
+    customer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="invoices",
+    )
+    booking = models.OneToOneField(
+        "bookings.Booking",
+        on_delete=models.PROTECT,
+        related_name="invoice",
+        null=True,
+        blank=True,
+    )
+    order = models.OneToOneField(
+        "orders.Order",
+        on_delete=models.PROTECT,
+        related_name="invoice",
+        null=True,
+        blank=True,
+    )
+    source_type = models.CharField(max_length=20)
+    source_reference = models.CharField(max_length=24)
+    recipient_name = models.CharField(max_length=200)
+    recipient_email = models.EmailField()
+    currency = models.CharField(max_length=3, default="GHS")
+    subtotal = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal("0.00"))],
+    )
+    total_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal("0.00"))],
+    )
+    line_items = models.JSONField(default=list)
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.OPEN
+    )
+    issued_at = models.DateTimeField(default=timezone.now)
+    due_at = models.DateTimeField(null=True, blank=True)
+    paid_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-issued_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(booking__isnull=False, order__isnull=True)
+                    | models.Q(booking__isnull=True, order__isnull=False)
+                ),
+                name="invoice_has_exactly_one_source",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["customer", "status", "issued_at"]),
+            models.Index(fields=["branch", "status", "issued_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.reference} for {self.source_reference}"
 
 
 class Receipt(BaseModel, BranchScopedModel):

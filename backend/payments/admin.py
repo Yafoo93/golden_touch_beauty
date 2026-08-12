@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib import messages
 
-from .models import Payment, Receipt
+from .models import Invoice, Payment, Receipt
 from .services import issue_receipt_for_verified_payment
 
 
@@ -82,6 +82,46 @@ class ReceiptAdmin(admin.ModelAdmin):
         "line_items",
         "issued_at",
         "email_sent_at",
+        "created_at",
+        "updated_at",
+    )
+
+
+@admin.register(Invoice)
+class InvoiceAdmin(admin.ModelAdmin):
+    list_display = (
+        "reference",
+        "customer",
+        "branch",
+        "source_type",
+        "source_reference",
+        "status",
+        "total_amount",
+        "issued_at",
+    )
+    list_filter = ("status", "source_type", "branch")
+    search_fields = (
+        "reference",
+        "source_reference",
+        "customer__email",
+        "customer__phone_number",
+    )
+    readonly_fields = (
+        "reference",
+        "customer",
+        "branch",
+        "booking",
+        "order",
+        "source_type",
+        "source_reference",
+        "recipient_name",
+        "recipient_email",
+        "currency",
+        "subtotal",
+        "total_amount",
+        "line_items",
+        "issued_at",
+        "due_at",
         "created_at",
         "updated_at",
     )

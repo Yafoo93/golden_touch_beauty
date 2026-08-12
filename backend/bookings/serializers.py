@@ -7,8 +7,10 @@ from django.utils import timezone
 from rest_framework import serializers
 
 from accounts.models import User
-from branches.models import Branch
+from branches.models import Branch, BranchStaffAssignment
+from branches.permissions import can_access_branch
 from core.phone import is_international_phone_number, normalize_phone_number
+from payments.services import issue_invoice_for_source
 from services.models import Service, ServiceBranchAvailability, ServicePriceOption
 
 from .models import Booking, BookingBlock, BookingHistory, BookingServiceItem
@@ -47,6 +49,16 @@ class BookingHistorySerializer(serializers.ModelSerializer):
         )
 
 
+class CustomerBookingHistorySerializer(serializers.ModelSerializer):
+    """Customer-safe history without internal reasons, metadata, or staff names."""
+
+    class Meta:
+        model = BookingHistory
+        fields = (
+            "id", "action", "from_status", "to_status", "created_at",
+        )
+
+
 class BookingSerializer(serializers.ModelSerializer):
     branch_code = serializers.CharField(source="branch.code", read_only=True)
     branch_name = serializers.CharField(source="branch.name", read_only=True)
@@ -55,6 +67,7 @@ class BookingSerializer(serializers.ModelSerializer):
     services = BookingServiceItemSerializer(source="service_items", many=True, read_only=True)
     history = BookingHistorySerializer(many=True, read_only=True)
     finishes_after_branch_closing = serializers.SerializerMethodField()
+    can_view_sensitive_intake = serializers.SerializerMethodField()
 
     class Meta:
         model = Booking
@@ -66,8 +79,26 @@ class BookingSerializer(serializers.ModelSerializer):
             "recipient_phone", "allergies", "conditions", "previous_treatments",
             "notes", "photo_marketing_consent", "payment_method",
             "payment_status", "finishes_after_branch_closing", "services",
-            "history", "created_at", "updated_at",
+            "history", "can_view_sensitive_intake", "created_at", "updated_at",
         )
+
+    def get_can_view_sensitive_intake(self, booking):
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if not user or not user.is_staff:
+            return True
+        return can_access_branch(
+            user, booking.branch,
+            required_roles=(BranchStaffAssignment.Role.MANAGER, BranchStaffAssignment.Role.SERVICE_PROVIDER),
+        )
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if not data["can_view_sensitive_intake"]:
+            for field in ("allergies", "conditions", "previous_treatments", "notes"):
+                data.pop(field, None)
+        return data
+
 
     def get_finishes_after_branch_closing(self, booking):
         local_start = timezone.localtime(booking.preferred_start)
@@ -80,6 +111,10 @@ class BookingSerializer(serializers.ModelSerializer):
             + timedelta(minutes=booking.total_duration_minutes)
             > closing
         )
+
+
+class CustomerBookingSerializer(BookingSerializer):
+    history = CustomerBookingHistorySerializer(many=True, read_only=True)
 
 
 class BookingCreateSerializer(serializers.Serializer):
@@ -226,6 +261,7 @@ class BookingCreateSerializer(serializers.Serializer):
         duplicate = Booking.objects.filter(
             customer=customer,
             status__in=ACTIVE_BOOKING_STATUSES,
+            preferred_start__gt=timezone.now(),
             service_items__service_id__in=service_id_set,
         ).distinct().exists()
         if duplicate and not override:
@@ -278,6 +314,7 @@ class BookingCreateSerializer(serializers.Serializer):
             actor=actor,
             metadata={"source": booking.source},
         )
+        issue_invoice_for_source(booking)
         return booking
 
 

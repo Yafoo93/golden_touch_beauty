@@ -7,7 +7,8 @@ from django.db import transaction
 from django.db.models import Sum
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-from rest_framework import status
+from rest_framework import generics, status
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -15,10 +16,11 @@ from rest_framework.views import APIView
 from branches.models import Branch
 from inventory.models import BranchInventory, StockMovement
 from products.models import CustomerCartItem
+from payments.services import issue_invoice_for_source
+from notifications.jobs import enqueue_email_job
 
-from .emails import send_order_confirmation_email, send_order_status_email
 from .models import Order, OrderItem, StockReservation
-from .serializers import CheckoutCreateSerializer, OrderSerializer
+from .serializers import CheckoutCreateSerializer, OrderDetailSerializer, OrderSerializer
 from .services import release_expired_for_inventories, release_order_reservations
 
 
@@ -26,8 +28,8 @@ User = get_user_model()
 
 
 def order_queryset():
-    return Order.objects.select_related("branch", "customer").prefetch_related(
-        "items", "stock_reservations"
+    return Order.objects.select_related("branch", "customer", "invoice").prefetch_related(
+        "items", "stock_reservations", "payments__receipt"
     )
 
 
@@ -267,9 +269,12 @@ class CheckoutCreateView(APIView):
                 performed_by=request.user,
             )
         CustomerCartItem.objects.filter(customer=request.user).delete()
+        issue_invoice_for_source(order)
         transaction.on_commit(
-            lambda order_id=order.pk: send_order_confirmation_email(
-                order_queryset().get(pk=order_id)
+            lambda order_id=order.pk: enqueue_email_job(
+                job_type="order_confirmation",
+                object_id=order_id,
+                unique_key=f"order:{order_id}:confirmation",
             )
         )
         return Response(
@@ -278,15 +283,18 @@ class CheckoutCreateView(APIView):
         )
 
 
-class CustomerOrderListView(APIView):
+class CustomerOrderListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = OrderSerializer
 
-    def get(self, request):
-        return Response(
-            OrderSerializer(
-                order_queryset().filter(customer=request.user), many=True
-            ).data
-        )
+    def get_queryset(self):
+        queryset = order_queryset().filter(customer=self.request.user)
+        requested_status = self.request.query_params.get("status", "").strip()
+        if requested_status:
+            if requested_status not in Order.Status.values:
+                raise ValidationError({"status": ["Select a valid order status."]})
+            queryset = queryset.filter(status=requested_status)
+        return queryset
 
 
 class CustomerOrderDetailView(APIView):
@@ -298,7 +306,7 @@ class CustomerOrderDetailView(APIView):
         ).first()
         if not order:
             return Response({"detail": "Order was not found."}, status=404)
-        return Response(OrderSerializer(order).data)
+        return Response(OrderDetailSerializer(order).data)
 
 
 class CustomerOrderCancelView(APIView):
@@ -333,9 +341,11 @@ class CustomerOrderCancelView(APIView):
             ]
         )
         transaction.on_commit(
-            lambda order_id=order.pk: send_order_status_email(
-                order_queryset().get(pk=order_id),
-                Order.Status.CANCELLED,
+            lambda order_id=order.pk, updated=str(order.updated_at): enqueue_email_job(
+                job_type="order_status",
+                object_id=order_id,
+                event=Order.Status.CANCELLED,
+                unique_key=f"order:{order_id}:cancelled:{updated}",
             )
         )
         for item in order.items.select_related("product_variant"):

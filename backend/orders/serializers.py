@@ -1,7 +1,9 @@
 from rest_framework import serializers
+from django.core.exceptions import ObjectDoesNotExist
 
 from branches.models import Branch
 from core.phone import is_international_phone_number, normalize_phone_number
+from payments.models import Payment
 
 from .models import Order, OrderItem, StockReservation
 
@@ -36,6 +38,39 @@ class OrderSerializer(serializers.ModelSerializer):
             "delivery_notes", "reservation_expires_at", "paid_at",
             "cancelled_at", "items", "created_at",
         )
+
+
+class OrderPaymentSerializer(serializers.ModelSerializer):
+    receipt_reference = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Payment
+        fields = (
+            "reference", "provider", "method", "status", "currency", "amount",
+            "paid_at", "receipt_reference", "created_at",
+        )
+
+    def get_receipt_reference(self, payment):
+        try:
+            return payment.receipt.reference
+        except ObjectDoesNotExist:
+            return None
+
+
+class OrderDetailSerializer(OrderSerializer):
+    payments = OrderPaymentSerializer(many=True, read_only=True)
+    invoice_reference = serializers.SerializerMethodField()
+
+    class Meta(OrderSerializer.Meta):
+        fields = OrderSerializer.Meta.fields + (
+            "payments", "invoice_reference", "updated_at",
+        )
+
+    def get_invoice_reference(self, order):
+        try:
+            return order.invoice.reference
+        except ObjectDoesNotExist:
+            return None
 
 
 class CheckoutCreateSerializer(serializers.Serializer):

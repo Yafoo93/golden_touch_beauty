@@ -9,6 +9,7 @@ import { useCartCount } from "@/components/cart/cart-count-context";
 import { CartItemCount } from "@/components/cart/cart-item-count";
 import { CartDrawer } from "@/components/cart/cart-drawer";
 import { ButtonLink } from "@/components/ui/button";
+import { NotificationCentre } from "@/components/notifications/notification-centre";
 import { useWishlist } from "@/components/wishlist/wishlist-context";
 import { ApiError, apiFetch } from "@/lib/api";
 
@@ -62,6 +63,9 @@ export function SiteHeader() {
   const [portalAccess, setPortalAccess] = useState<
     Array<"management" | "pos">
   >([]);
+  const [headerAuthenticated, setHeaderAuthenticated] = useState<boolean | null>(
+    null,
+  );
   const closeCart = useCallback(() => setIsCartOpen(false), []);
   const { itemCount: cartItemCount } = useCartCount();
   const {
@@ -91,7 +95,10 @@ export function SiteHeader() {
     async function loadPortalAccess() {
       try {
         const response = await apiFetch<CurrentUserResponse>("auth/me/");
-        if (!cancelled) setPortalAccess(response.user.portal_access);
+        if (!cancelled) {
+          setPortalAccess(response.user.portal_access);
+          setHeaderAuthenticated(true);
+        }
       } catch (error) {
         if (
           !cancelled &&
@@ -99,6 +106,7 @@ export function SiteHeader() {
           [401, 403].includes(error.status)
         ) {
           setPortalAccess([]);
+          setHeaderAuthenticated(false);
         }
       }
     }
@@ -109,7 +117,12 @@ export function SiteHeader() {
     };
   }, [pathname]);
 
-  const isAuthenticated = authenticated === true || portalAccess.length > 0;
+  // Authentication belongs to the session endpoint. Wishlist availability is
+  // only a fallback while that request is still resolving; a temporary
+  // wishlist failure must never hide authenticated header controls.
+  const isAuthenticated =
+    headerAuthenticated === true ||
+    (headerAuthenticated === null && authenticated === true);
   const hasManagementAccess = portalAccess.includes("management");
   const hasPosAccess = portalAccess.includes("pos");
   const accountHref = isAuthenticated ? "/account" : "/login";
@@ -181,12 +194,13 @@ export function SiteHeader() {
               POS
             </Link>
           ) : null}
+          <NotificationCentre enabled={isAuthenticated} />
           <Link
             className="wishlist-link"
             href={
               isAuthenticated
-                ? "/wishlist"
-                : `/login?next=${encodeURIComponent("/wishlist")}`
+                ? "/account/wishlist"
+                : `/login?next=${encodeURIComponent("/account/wishlist")}`
             }
             aria-label={`Wishlist, ${wishlistItemCount} ${wishlistItemCount === 1 ? "item" : "items"}`}
           >
@@ -283,11 +297,11 @@ export function SiteHeader() {
               className="mobile-nav__link"
               href={
                 isAuthenticated
-                  ? "/wishlist"
-                  : `/login?next=${encodeURIComponent("/wishlist")}`
+                  ? "/account/wishlist"
+                  : `/login?next=${encodeURIComponent("/account/wishlist")}`
               }
               aria-label={`Wishlist, ${wishlistItemCount} ${wishlistItemCount === 1 ? "item" : "items"}`}
-              aria-current={pathname.startsWith("/wishlist") ? "page" : undefined}
+              aria-current={pathname.startsWith("/account/wishlist") ? "page" : undefined}
               onClick={() => setIsMenuOpen(false)}
             >
               Wishlist

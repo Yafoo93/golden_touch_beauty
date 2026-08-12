@@ -37,8 +37,8 @@ export function AccountOrders() {
           <p>Purchases</p>
           <h2 id="account-orders-title">Your orders</h2>
         </div>
-        <ButtonLink href="/shop" size="small">
-          Browse products
+        <ButtonLink href="/account/orders" size="small">
+          View all orders
         </ButtonLink>
       </header>
       {message ? <p aria-live="polite">{message}</p> : null}
@@ -65,7 +65,7 @@ export function AccountOrders() {
                 {order.payment_status.replaceAll("_", " ")}
               </p>
               <ButtonLink
-                href={`/checkout/success?order=${encodeURIComponent(order.reference)}`}
+                href={`/account/orders/${encodeURIComponent(order.reference)}`}
                 size="small"
                 variant="outline"
               >
