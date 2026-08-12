@@ -17,6 +17,21 @@ POS_PORTAL_ROLES = {
     BranchStaffAssignment.Role.MANAGER,
 }
 
+ALL_MANAGEMENT_MODULES = (
+    "dashboard", "branches", "services", "products", "inventory", "bookings",
+    "customers", "orders", "payments", "reports", "staff_access", "audit_log",
+    "content",
+)
+MANAGEMENT_MODULE_ROLES = {
+    "dashboard": {BranchStaffAssignment.Role.MANAGER, BranchStaffAssignment.Role.RECEPTIONIST, BranchStaffAssignment.Role.SERVICE_PROVIDER},
+    "inventory": {BranchStaffAssignment.Role.MANAGER, BranchStaffAssignment.Role.STOCK_MANAGER},
+    "bookings": {BranchStaffAssignment.Role.MANAGER, BranchStaffAssignment.Role.RECEPTIONIST, BranchStaffAssignment.Role.SERVICE_PROVIDER},
+    "customers": {BranchStaffAssignment.Role.MANAGER, BranchStaffAssignment.Role.RECEPTIONIST},
+    "orders": {BranchStaffAssignment.Role.MANAGER, BranchStaffAssignment.Role.RECEPTIONIST},
+    "payments": {BranchStaffAssignment.Role.MANAGER},
+    "reports": {BranchStaffAssignment.Role.MANAGER},
+}
+
 
 def is_owner(user) -> bool:
     """Owners have global branch access, including inactive branches."""
@@ -94,6 +109,30 @@ def get_staff_portal_access(user) -> list[str]:
         ):
             access.add("pos")
     return [portal for portal in ("management", "pos") if portal in access]
+
+
+def get_management_modules(user) -> list[str]:
+    """Return management modules granted by active branch roles."""
+    if not user or not user.is_authenticated or not user.is_active:
+        return []
+    if is_owner(user):
+        return list(ALL_MANAGEMENT_MODULES)
+    if not user.is_staff:
+        return []
+
+    roles = set()
+    assignments = BranchStaffAssignment.objects.filter(
+        staff=user, is_active=True, branch__is_active=True
+    ).values_list("roles", "permission_overrides")
+    for assignment_roles, overrides in assignments:
+        overrides = overrides if isinstance(overrides, dict) else {}
+        if overrides.get("can_access_branch") is False or overrides.get("can_access_management") is False:
+            continue
+        roles.update(assignment_roles or [])
+    return [
+        module for module in ALL_MANAGEMENT_MODULES
+        if MANAGEMENT_MODULE_ROLES.get(module, set()).intersection(roles)
+    ]
 
 
 def filter_queryset_by_branch_access(

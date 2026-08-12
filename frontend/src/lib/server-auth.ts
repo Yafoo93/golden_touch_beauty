@@ -4,13 +4,17 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 export type PortalAccess = "management" | "pos";
+export type ManagementModule = "dashboard" | "branches" | "services" | "products" | "inventory" | "bookings" | "customers" | "orders" | "payments" | "reports" | "staff_access" | "audit_log" | "content";
 
 export type CurrentUser = {
   id: string;
   full_name: string;
   email: string;
   phone_number: string;
+  date_of_birth: string | null;
+  gender: "female" | "male" | "other" | "prefer_not_to_say" | "";
   portal_access: PortalAccess[];
+  management_modules: ManagementModule[];
   post_login_path: string | null;
   is_staff: boolean;
   is_superuser: boolean;

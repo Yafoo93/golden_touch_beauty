@@ -7,7 +7,7 @@ export default async function ManagementLayout({
   const user = await requirePortalAccess("management", "/management");
   return (
     <>
-      <PortalNavigation portalAccess={user.portal_access} />
+      <PortalNavigation portalAccess={user.portal_access} managementModules={user.management_modules} />
       {children}
     </>
   );

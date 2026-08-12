@@ -30,7 +30,12 @@ async function loadInventory(): Promise<Result> {
   }
 }
 
-export default async function InventoryPage() {
+export default async function InventoryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ low_stock?: string }>;
+}) {
+  const filters = await searchParams;
   const result = await loadInventory();
   return (
     <main className="management-page">
@@ -43,7 +48,10 @@ export default async function InventoryPage() {
       ) : result.status === "error" ? (
         <EmptyState title="Inventory could not be loaded" description="Check that Django is running, then try again." action={<ButtonLink href="/management/inventory">Try again</ButtonLink>} />
       ) : (
-        <InventoryDashboard inventory={result.inventory} />
+        <InventoryDashboard
+          inventory={result.inventory}
+          initialLowOnly={filters.low_stock === "true"}
+        />
       )}
     </main>
   );

@@ -4,6 +4,7 @@ from .views import (
     BranchManagerOptionListView,
     ManagementBranchDetailView,
     ManagementBranchListView,
+    ManagementOverviewView,
     PickupBranchOptionsView,
     PublicBranchDetailView,
     PublicBranchListView,
@@ -15,6 +16,7 @@ app_name = "branches"
 urlpatterns = [
     path("", PublicBranchListView.as_view(), name="public-list"),
     path("management/", ManagementBranchListView.as_view(), name="management-list"),
+    path("management/overview/", ManagementOverviewView.as_view(), name="management-overview"),
     path("management/managers/", BranchManagerOptionListView.as_view(), name="management-manager-options"),
     path("management/<uuid:pk>/", ManagementBranchDetailView.as_view(), name="management-detail"),
     path("pickup-options/", PickupBranchOptionsView.as_view(), name="pickup-options"),

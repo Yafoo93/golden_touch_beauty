@@ -18,6 +18,7 @@ export function formatGhanaPhone(value: string) {
   return `+233 ${digits.slice(3, 6)} ${digits.slice(6, 9)} ${digits.slice(9)}`;
 }
 
-export function whatsappUrl(value: string) {
-  return `https://wa.me/${value.replace(/\D/g, "")}`;
+export function whatsappUrl(value: string, message?: string) {
+  const base = `https://wa.me/${value.replace(/\D/g, "")}`;
+  return message ? `${base}?text=${encodeURIComponent(message)}` : base;
 }

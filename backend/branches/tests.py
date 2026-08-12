@@ -1,19 +1,22 @@
-from datetime import time
+from datetime import time, timedelta
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from accounts.models import User
-from bookings.models import Booking
+from bookings.models import Booking, BookingServiceItem
 from inventory.models import BranchInventory
-from orders.models import Order
-from payments.models import Payment, Receipt
+from orders.models import Order, OrderItem
+from payments.models import Invoice, Payment, Receipt
 from pos.models import POSSale
+from products.models import Product, ProductCategory, ProductVariant
 from reports.models import ReportSnapshot
+from services.models import Service, ServiceCategory
 
 from .models import Branch, BranchStaffAssignment
 from .permissions import (
@@ -294,6 +297,7 @@ class ManagementBranchApiTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("closing_time", response.json()["error"]["details"])
 
+
     def test_owner_can_retrieve_and_update_branch(self):
         self.client.force_login(self.owner)
         detail_url = reverse("branches:management-detail", args=[self.branch.pk])
@@ -337,5 +341,433 @@ class ManagementBranchApiTests(TestCase):
         ids = {manager["id"] for manager in response.json()}
         self.assertIn(str(self.owner.pk), ids)
         self.assertIn(str(self.staff.pk), ids)
+
+
+class ManagementOverviewApiTests(TestCase):
+    def setUp(self):
+        self.makola = Branch.objects.create(
+            name="Overview Makola", code="OVERVIEW-MAKOLA", address="Accra",
+            telephone_number="+233200000101", opening_days=["monday"],
+            opening_time=time(7, 30), closing_time=time(17, 0),
+        )
+        self.tse_addo = Branch.objects.create(
+            name="Overview Tse Addo", code="OVERVIEW-TSE", address="Accra",
+            telephone_number="+233200000102", opening_days=["monday"],
+            opening_time=time(7, 30), closing_time=time(19, 0),
+        )
+        self.owner = User.objects.create_superuser(
+            email="overview-owner@example.com", phone_number="+233200000103",
+            full_name="Overview Owner", password="test-password",
+        )
+        self.manager = User.objects.create_user(
+            email="overview-manager@example.com", phone_number="+233200000104",
+            full_name="Makola Manager", password="test-password", is_staff=True,
+        )
+        self.cashier = User.objects.create_user(
+            email="overview-cashier@example.com", phone_number="+233200000105",
+            full_name="Makola Cashier", password="test-password", is_staff=True,
+        )
+        self.customer = User.objects.create_user(
+            email="overview-customer@example.com", phone_number="+233200000106",
+            full_name="Overview Customer", password="test-password",
+        )
+        category = ProductCategory.objects.create(
+            name="Overview products", slug="overview-products",
+        )
+        self.product_category = category
+        product = Product.objects.create(
+            category=category, name="Overview Cream", slug="overview-cream",
+            description="Dashboard inventory fixture.",
+            is_active=True, is_published=True,
+        )
+        standard = ProductVariant.objects.create(
+            product=product, name="Standard", sku="OVERVIEW-CREAM-STD",
+            selling_price="50.00", cost_price="25.00",
+        )
+        travel = ProductVariant.objects.create(
+            product=product, name="Travel", sku="OVERVIEW-CREAM-TRAVEL",
+            selling_price="30.00", cost_price="15.00",
+        )
+        BranchInventory.objects.create(
+            branch=self.makola, product_variant=standard,
+            quantity_on_hand=10, quantity_reserved=6, reorder_level=4,
+        )
+        BranchInventory.objects.create(
+            branch=self.tse_addo, product_variant=standard,
+            quantity_on_hand=10, quantity_reserved=1, reorder_level=2,
+        )
+        BranchInventory.objects.create(
+            branch=self.tse_addo, product_variant=travel,
+            quantity_on_hand=2, quantity_reserved=0, reorder_level=3,
+        )
+        BranchStaffAssignment.objects.create(
+            branch=self.makola, staff=self.manager, roles=["manager"],
+        )
+        BranchStaffAssignment.objects.create(
+            branch=self.makola, staff=self.cashier, roles=["cashier"],
+        )
+        now = timezone.now()
+        today_booking = Booking.objects.create(
+            branch=self.makola, customer=self.customer,
+            status=Booking.Status.CONFIRMED, preferred_start=now,
+            recipient_name=self.customer.full_name,
+            recipient_phone=self.customer.phone_number,
+        )
+        self.service_category = ServiceCategory.objects.create(
+            name="Overview services", slug="overview-services",
+        )
+        service = Service.objects.create(
+            category=self.service_category,
+            name="Overview Facial",
+            slug="overview-facial",
+            short_description="Dashboard service fixture.",
+            description="Dashboard service fixture.",
+            price="60.00",
+            duration_minutes=60,
+            is_active=True,
+            is_published=True,
+        )
+        BookingServiceItem.objects.create(
+            booking=today_booking,
+            service=service,
+            service_name=service.name,
+            unit_price="60.00",
+            duration_minutes=60,
+        )
+        Booking.objects.create(
+            branch=self.tse_addo, customer=self.customer,
+            status=Booking.Status.PENDING, preferred_start=now,
+            recipient_name=self.customer.full_name,
+            recipient_phone=self.customer.phone_number,
+        )
+        Booking.objects.create(
+            branch=self.makola, customer=self.customer,
+            status=Booking.Status.CANCELLED, preferred_start=now,
+            recipient_name=self.customer.full_name,
+            recipient_phone=self.customer.phone_number,
+        )
+        Booking.objects.create(
+            branch=self.makola, customer=self.customer,
+            status=Booking.Status.CONFIRMED,
+            preferred_start=now + timedelta(days=1),
+            recipient_name=self.customer.full_name,
+            recipient_phone=self.customer.phone_number,
+        )
+        Booking.objects.create(
+            branch=self.makola, customer=self.customer,
+            status=Booking.Status.PENDING,
+            preferred_start=now + timedelta(days=2),
+            recipient_name=self.customer.full_name,
+            recipient_phone=self.customer.phone_number,
+        )
+        Booking.objects.create(
+            branch=self.makola, customer=self.customer,
+            status=Booking.Status.PROPOSED,
+            preferred_start=now + timedelta(days=3),
+            proposed_start=now + timedelta(days=3, hours=1),
+            proposed_expires_at=now + timedelta(days=1),
+            recipient_name=self.customer.full_name,
+            recipient_phone=self.customer.phone_number,
+        )
+        makola_order = Order.objects.create(
+            branch=self.makola, customer=self.customer,
+            status=Order.Status.PAID, payment_status="paid",
+            subtotal="100.00", total_amount="100.00",
+            recipient_name=self.customer.full_name,
+            recipient_phone=self.customer.phone_number,
+            paid_at=now,
+        )
+        tse_addo_order = Order.objects.create(
+            branch=self.tse_addo, customer=self.customer,
+            status=Order.Status.PAID, payment_status="paid",
+            subtotal="75.50", total_amount="75.50",
+            recipient_name=self.customer.full_name,
+            recipient_phone=self.customer.phone_number,
+            paid_at=now,
+        )
+        for order, variant, amount in (
+            (makola_order, standard, "100.00"),
+            (tse_addo_order, travel, "75.50"),
+        ):
+            OrderItem.objects.create(
+                order=order,
+                product_variant=variant,
+                product_name=variant.product.name,
+                product_slug=variant.product.slug,
+                variant_name=variant.name,
+                sku=variant.sku,
+                unit_price=amount,
+                quantity=1,
+                line_total=amount,
+            )
+        Payment.objects.create(
+            branch=self.makola, customer=self.customer, order=makola_order,
+            status=Payment.Status.SUCCEEDED, amount="100.00", currency="GHS",
+            paid_at=now,
+        )
+        Payment.objects.create(
+            branch=self.tse_addo, customer=self.customer, order=tse_addo_order,
+            status=Payment.Status.SUCCEEDED, amount="75.50", currency="GHS",
+            paid_at=now,
+        )
+        Payment.objects.create(
+            branch=self.makola, customer=self.customer, order=makola_order,
+            status=Payment.Status.PENDING, amount="20.00", currency="GHS",
+            paid_at=None,
+        )
+        Payment.objects.create(
+            branch=self.makola, customer=self.customer,
+            status=Payment.Status.SUCCEEDED, amount="50.00", currency="GHS",
+            paid_at=now - timedelta(days=1),
+        )
+        Payment.objects.create(
+            branch=self.makola, customer=self.customer, order=makola_order,
+            status=Payment.Status.REFUNDED, amount="30.00", currency="GHS",
+            paid_at=now,
+        )
+        makola_paid_booking = Booking.objects.create(
+            branch=self.makola, customer=self.customer,
+            status=Booking.Status.COMPLETED,
+            preferred_start=now - timedelta(days=1), total_amount="60.00",
+            payment_status="paid", recipient_name=self.customer.full_name,
+            recipient_phone=self.customer.phone_number,
+        )
+        tse_addo_paid_booking = Booking.objects.create(
+            branch=self.tse_addo, customer=self.customer,
+            status=Booking.Status.COMPLETED,
+            preferred_start=now - timedelta(days=1), total_amount="40.00",
+            payment_status="paid", recipient_name=self.customer.full_name,
+            recipient_phone=self.customer.phone_number,
+        )
+        for booking in (makola_paid_booking, tse_addo_paid_booking):
+            BookingServiceItem.objects.create(
+                booking=booking,
+                service=service,
+                service_name=service.name,
+                unit_price=booking.total_amount,
+                duration_minutes=60,
+            )
+        Payment.objects.create(
+            branch=self.makola, customer=self.customer,
+            booking=makola_paid_booking, status=Payment.Status.SUCCEEDED,
+            amount="60.00", currency="GHS", paid_at=now - timedelta(days=1),
+        )
+        Payment.objects.create(
+            branch=self.tse_addo, customer=self.customer,
+            booking=tse_addo_paid_booking, status=Payment.Status.SUCCEEDED,
+            amount="40.00", currency="GHS", paid_at=now - timedelta(days=1),
+        )
+        Payment.objects.create(
+            branch=self.makola, customer=self.customer,
+            booking=makola_paid_booking, status=Payment.Status.REFUNDED,
+            amount="15.00", currency="GHS", paid_at=now - timedelta(days=1),
+        )
+
+        def create_invoice(branch, amount, invoice_status):
+            order = Order.objects.create(
+                branch=branch, customer=self.customer,
+                subtotal=amount, total_amount=amount,
+                recipient_name=self.customer.full_name,
+                recipient_phone=self.customer.phone_number,
+            )
+            return Invoice.objects.create(
+                branch=branch, customer=self.customer, order=order,
+                source_type="order", source_reference=order.reference,
+                recipient_name=self.customer.full_name,
+                recipient_email=self.customer.email,
+                subtotal=amount, total_amount=amount, currency="GHS",
+                line_items=[], status=invoice_status,
+            )
+
+        create_invoice(self.makola, "90.00", Invoice.Status.OPEN)
+        create_invoice(self.tse_addo, "60.00", Invoice.Status.OPEN)
+        create_invoice(self.makola, "30.00", Invoice.Status.PAID)
+        create_invoice(self.makola, "25.00", Invoice.Status.EXPIRED)
+        Order.objects.create(
+            branch=self.makola, customer=self.customer,
+            status=Order.Status.DELIVERED, payment_status="paid",
+            recipient_name=self.customer.full_name,
+            recipient_phone=self.customer.phone_number,
+        )
+        Order.objects.create(
+            branch=self.tse_addo, customer=self.customer,
+            status=Order.Status.CANCELLED, payment_status="cancelled",
+            recipient_name=self.customer.full_name,
+            recipient_phone=self.customer.phone_number,
+        )
+        Booking.objects.create(
+            branch=self.tse_addo, customer=self.customer,
+            status=Booking.Status.PROPOSED,
+            preferred_start=now + timedelta(days=4),
+            proposed_start=now + timedelta(days=4, hours=1),
+            proposed_expires_at=now + timedelta(days=1),
+            recipient_name=self.customer.full_name,
+            recipient_phone=self.customer.phone_number,
+        )
+        Booking.objects.create(
+            branch=self.makola, customer=self.customer,
+            status=Booking.Status.PROPOSED,
+            preferred_start=now + timedelta(days=5),
+            proposed_start=now + timedelta(days=5, hours=1),
+            proposed_expires_at=now - timedelta(minutes=1),
+            recipient_name=self.customer.full_name,
+            recipient_phone=self.customer.phone_number,
+        )
+
+    def test_owner_overview_contains_every_branch(self):
+        self.client.force_login(self.owner)
+        response = self.client.get(reverse("branches:management-overview"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.json()["staff"]["is_owner"])
+        self.assertEqual(
+            {branch["code"] for branch in response.json()["branches"]},
+            {self.makola.code, self.tse_addo.code},
+        )
+        self.assertEqual(response.json()["summary"]["today_appointments"], 2)
+        self.assertEqual(response.json()["summary"]["pending_booking_requests"], 2)
+        self.assertEqual(
+            response.json()["summary"]["proposed_changes_awaiting_acceptance"],
+            2,
+        )
+        self.assertEqual(response.json()["summary"]["today_sales"], "175.50")
+        self.assertEqual(response.json()["summary"]["product_revenue"], "175.50")
+        self.assertEqual(response.json()["summary"]["service_revenue"], "100.00")
+        self.assertEqual(response.json()["summary"]["outstanding_balances"], "150.00")
+        self.assertEqual(response.json()["summary"]["pending_online_orders"], 6)
+        self.assertEqual(response.json()["summary"]["low_stock_products"], 2)
+        self.assertEqual(
+            {item["code"] for item in response.json()["branch_comparison"]},
+            {self.makola.code, self.tse_addo.code},
+        )
+
+    def test_manager_overview_is_limited_to_assigned_branches(self):
+        self.client.force_login(self.manager)
+        response = self.client.get(reverse("branches:management-overview"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.json()["staff"]["is_owner"])
+        self.assertEqual(
+            [branch["code"] for branch in response.json()["branches"]],
+            [self.makola.code],
+        )
+        self.assertEqual(response.json()["branches"][0]["roles"], ["manager"])
+        self.assertEqual(response.json()["summary"]["today_appointments"], 1)
+        self.assertEqual(response.json()["summary"]["pending_booking_requests"], 1)
+        self.assertEqual(
+            response.json()["summary"]["proposed_changes_awaiting_acceptance"],
+            1,
+        )
+        self.assertEqual(response.json()["summary"]["today_sales"], "100.00")
+        self.assertEqual(response.json()["summary"]["product_revenue"], "100.00")
+        self.assertEqual(response.json()["summary"]["service_revenue"], "60.00")
+        self.assertEqual(response.json()["summary"]["outstanding_balances"], "90.00")
+        self.assertEqual(response.json()["summary"]["pending_online_orders"], 4)
+        self.assertEqual(response.json()["summary"]["low_stock_products"], 1)
+
+    def test_owner_can_filter_overview_to_one_authorized_branch(self):
+        self.client.force_login(self.owner)
+        response = self.client.get(
+            reverse("branches:management-overview"),
+            {"branch": str(self.makola.pk)},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()["summary"]["today_sales"], "100.00")
+        self.assertEqual(response.json()["summary"]["low_stock_products"], 1)
+        self.assertEqual(
+            [branch["id"] for branch in response.json()["branches"]],
+            [str(self.makola.pk)],
+        )
+
+    def test_manager_cannot_filter_to_an_unassigned_branch(self):
+        self.client.force_login(self.manager)
+        response = self.client.get(
+            reverse("branches:management-overview"),
+            {"branch": str(self.tse_addo.pk)},
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_status_and_payment_method_filters_change_relevant_metrics(self):
+        self.client.force_login(self.owner)
+        booking_response = self.client.get(
+            reverse("branches:management-overview"),
+            {"booking_status": Booking.Status.CONFIRMED},
+        )
+        order_response = self.client.get(
+            reverse("branches:management-overview"),
+            {"order_status": Order.Status.CANCELLED},
+        )
+        payment_response = self.client.get(
+            reverse("branches:management-overview"),
+            {"payment_method": "not-used"},
+        )
+
+        self.assertEqual(booking_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            booking_response.json()["summary"]["pending_booking_requests"], 0
+        )
+        self.assertEqual(order_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(order_response.json()["summary"]["pending_online_orders"], 0)
+        self.assertEqual(payment_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(payment_response.json()["summary"]["today_sales"], "0.00")
+
+    def test_category_filters_exclude_unrelated_revenue(self):
+        self.client.force_login(self.owner)
+        product_response = self.client.get(
+            reverse("branches:management-overview"),
+            {"product_category": str(self.product_category.pk)},
+        )
+        service_response = self.client.get(
+            reverse("branches:management-overview"),
+            {"service_category": str(self.service_category.pk)},
+        )
+
+        self.assertEqual(product_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(product_response.json()["summary"]["product_revenue"], "175.50")
+        self.assertEqual(product_response.json()["summary"]["service_revenue"], "0.00")
+        self.assertEqual(product_response.json()["summary"]["low_stock_products"], 2)
+        self.assertEqual(service_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(service_response.json()["summary"]["service_revenue"], "100.00")
+        self.assertEqual(service_response.json()["summary"]["product_revenue"], "0.00")
+
+    def test_selected_branch_keeps_all_authorized_branch_options(self):
+        self.client.force_login(self.owner)
+        response = self.client.get(
+            reverse("branches:management-overview"),
+            {"branch": str(self.makola.pk)},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            {item["id"] for item in response.json()["filter_options"]["branches"]},
+            {str(self.makola.pk), str(self.tse_addo.pk)},
+        )
+
+    def test_date_range_is_validated_and_filter_options_are_returned(self):
+        self.client.force_login(self.owner)
+        invalid_response = self.client.get(
+            reverse("branches:management-overview"),
+            {"date_from": "2026-08-12", "date_to": "2026-08-01"},
+        )
+        response = self.client.get(reverse("branches:management-overview"))
+
+        self.assertEqual(invalid_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        options = response.json()["filter_options"]
+        self.assertTrue(options["product_categories"])
+        self.assertEqual(
+            {item["value"] for item in options["booking_statuses"]},
+            set(Booking.Status.values),
+        )
+        self.assertEqual(
+            {item["value"] for item in options["order_statuses"]},
+            set(Order.Status.values),
+        )
+
+    def test_cashier_without_management_role_cannot_open_overview(self):
+        self.client.force_login(self.cashier)
+        response = self.client.get(reverse("branches:management-overview"))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 # Create your tests here.

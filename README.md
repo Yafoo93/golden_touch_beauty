@@ -949,6 +949,32 @@ python manage.py seed_development_data
 python manage.py runserver
 ```
 
+Run the durable email worker in a second terminal:
+
+```powershell
+cd backend
+.venv\Scripts\Activate.ps1
+python manage.py process_email_jobs
+```
+
+The same worker also schedules and delivers customer appointment reminders 24
+hours and 6 hours before confirmed appointments. It reconciles existing future
+bookings every five minutes, and reminder jobs are invalidated automatically
+when an appointment is cancelled, completed, or moved to a different time.
+
+The web process queues booking, order, receipt, password-reset, and
+email-verification messages in PostgreSQL. The worker delivers them outside
+the web request and retries temporary failures with exponential backoff. On
+Render, create a Background Worker from the same repository and backend root
+with this start command:
+
+```text
+python manage.py process_email_jobs
+```
+
+Give the worker the same `DATABASE_URL` and email environment variables as the
+backend web service. Do not enable `EMAIL_JOBS_EAGER` in production.
+
 The seed command loads:
 
 * Makola branch

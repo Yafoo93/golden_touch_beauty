@@ -9,12 +9,14 @@ import type { ManagementInventoryItem } from "@/lib/management-inventory";
 
 export function InventoryDashboard({
   inventory,
+  initialLowOnly = false,
 }: {
   inventory: ManagementInventoryItem[];
+  initialLowOnly?: boolean;
 }) {
   const [branch, setBranch] = useState("all");
   const [search, setSearch] = useState("");
-  const [lowOnly, setLowOnly] = useState(false);
+  const [lowOnly, setLowOnly] = useState(initialLowOnly);
   const branches = useMemo(
     () =>
       Array.from(
