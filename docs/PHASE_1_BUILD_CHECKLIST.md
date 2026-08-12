@@ -468,20 +468,20 @@ Successful payment confirms the correct booking/order exactly once. Failed or re
 - [x] Printable/downloadable receipt.
 - [x] Appointment change and cancellation messages.
 - [x] Order-status messages.
-- [ ] In-system notification list.
+- [x] In-system notification list.
 
 ### Pages
 
-- [ ] `/account/notifications` — customer notifications.
+- [x] `/account/notifications` — customer notifications.
 - [x] `/account/receipts/[reference]` — view/download a receipt.
 
 ### Backend work
 
-- [ ] Create Notification, Receipt, and Invoice records.
-- [ ] Send emails through background jobs.
+- [x] Create Notification, Receipt, and Invoice records.
+- [x] Send emails through background jobs.
 - [ ] Retry failed email delivery without repeating the underlying transaction.
-- [ ] Schedule appointment reminders 24 hours and 6 hours before attendance.
-- [ ] Add pre-filled WhatsApp actions for staff where required.
+- [x] Schedule appointment reminders 24 hours and 6 hours before attendance.
+- [x] Add pre-filled WhatsApp actions for staff where required.
 
 ### Result
 
@@ -493,21 +493,22 @@ Customers receive clear evidence and updates for their bookings, orders, and pay
 
 ### Customer pages
 
-- [ ] `/account` — overview with upcoming appointments, completed services, orders, balances, and recent activity.
-- [ ] `/account/appointments` — all appointments grouped/filterable by status.
-- [ ] `/account/appointments/[reference]` — appointment services, branch, time, payment, history, and permitted actions.
-- [ ] `/account/orders` — all product orders.
-- [ ] `/account/orders/[reference]` — items, payment, fulfillment, tracking, and receipt.
-- [ ] `/account/profile` — full name, email, phone, date of birth, and gender.
-- [ ] `/account/addresses` — saved billing/delivery addresses.
-- [ ] `/account/consent` — marketing and photograph-consent settings.
-- [ ] `/account/wishlist` — saved products.
-- [ ] `/account/notifications` — operational notifications.
+- [x] `/account` — overview with upcoming appointments, completed services, orders, balances, and recent activity.
+- [x] `/account/appointments` — all appointments grouped/filterable by status.
+- [x] `/account/appointments/[reference]` — appointment services, branch, time, payment, history, and permitted actions.
+- [x] `/account/orders` — all product orders.
+- [x] `/account/orders/[reference]` — items, payment, fulfillment, tracking, and receipt.
+- [x] `/account/profile` — full name, email, phone, date of birth, and gender.
+- [x] `/account/addresses` — saved billing/delivery addresses.
+- [x] `/account/consent` — marketing and photograph-consent settings.
+- [x] `/account/wishlist` — saved products.
+- [x] `/account/notifications` — operational notifications.
+- [x] When a customer opens a product or service, related products/services are suggested below it.
 
 ### Security tests
 
-- [ ] A customer cannot view another customer’s order by changing the URL.
-- [ ] A customer cannot view another customer’s booking, payment, receipt, address, or profile.
+- [x] A customer cannot view another customer’s order by changing the URL.
+- [x] A customer cannot view another customer’s booking, payment, receipt, address, or profile.
 
 ### Result
 
@@ -519,52 +520,52 @@ A logged-in customer can manage their relationship with Golden Touch from one pl
 
 ### Management home
 
-- [ ] `/management` — owner/manager overview.
+- [x] `/management` — owner/manager overview.
 
 ### Dashboard cards
 
-- [ ] Today’s appointments.
-- [ ] Pending booking requests.
-- [ ] Proposed changes awaiting customer acceptance.
-- [ ] Today’s sales.
-- [ ] Product revenue.
-- [ ] Service revenue.
-- [ ] Outstanding balances.
-- [ ] Pending online orders.
-- [ ] Low-stock products.
+- [x] Today’s appointments.
+- [x] Pending booking requests.
+- [x] Proposed changes awaiting customer acceptance.
+- [x] Today’s sales.
+- [x] Product revenue.
+- [x] Service revenue.
+- [x] Outstanding balances.
+- [x] Pending online orders.
+- [x] Low-stock products.
 
 ### Management navigation
 
-- [ ] Branches.
-- [ ] Services.
-- [ ] Products.
-- [ ] Inventory.
-- [ ] Bookings.
-- [ ] Customers.
-- [ ] Orders.
-- [ ] Payments.
-- [ ] POS.
-- [ ] Reports.
-- [ ] Staff access.
-- [ ] Audit log.
+- [x] Branches.
+- [x] Services.
+- [x] Products.
+- [x] Inventory.
+- [x] Bookings.
+- [x] Customers.
+- [x] Orders.
+- [x] Payments.
+- [x] POS.
+- [x] Reports.
+- [x] Staff access.
+- [x] Audit log.
 
 ### Filters
 
-- [ ] Date range.
-- [ ] Branch.
-- [ ] Product category.
-- [ ] Service category.
-- [ ] Payment method.
-- [ ] Booking status.
-- [ ] Order status.
+- [x] Date range.
+- [x] Branch.
+- [x] Product category.
+- [x] Service category.
+- [x] Payment method.
+- [x] Booking status.
+- [x] Order status.
 
 ### Permission behavior
 
-- [ ] Owner sees all branches and branch comparisons.
-- [ ] Branch managers see assigned branches only.
-- [ ] Receptionists do not see cost prices, profit, or sensitive medical information.
-- [ ] Cashiers see permitted sales/POS information only.
-- [ ] Stock managers see inventory operations only where authorized.
+- [x] Owner sees all branches and branch comparisons.
+- [x] Branch managers see assigned branches only.
+- [x] Receptionists do not see cost prices, profit, or sensitive medical information.
+- [x] Cashiers see permitted sales/POS information only.
+- [x] Stock managers see inventory operations only where authorized.
 
 ### Result
 
@@ -576,23 +577,23 @@ Management can operate the launched website without asking a developer to edit r
 
 ### POS pages
 
-- [ ] `/pos` — product/service search and current sale.
-- [ ] `/pos/sales` — permitted sale history.
-- [ ] `/pos/sales/[reference]` — completed sale and receipt.
-- [ ] `/pos/end-of-day` — cashier totals and payment-method summary.
+- [x] `/pos` — product/service search and current sale.
+- [x] `/pos/sales` — permitted sale history.
+- [x] `/pos/sales/[reference]` — completed sale and receipt.
+- [x] `/pos/end-of-day` — cashier totals and payment-method summary.
 
 ### POS behavior
 
-- [ ] Require staff login and branch selection/assignment.
-- [ ] Add products, services, or both to one sale.
-- [ ] Select an existing customer or use a walk-in customer.
-- [ ] Accept cash, approved electronic payment, bank-transfer record, partial payment, or split payment.
-- [ ] Deduct stock from the POS branch.
-- [ ] Record cashier and branch on every sale and receipt.
-- [ ] Print the receipt.
-- [ ] Prevent editing a completed sale.
-- [ ] Require authorized reversal/refund, reason, and audit history for corrections.
-- [ ] Clearly block completion if connectivity is lost in Phase 1.
+- [x] Require staff login and branch selection/assignment.
+- [x] Add products, services, or both to one sale.
+- [x] Select an existing customer or use a walk-in customer.
+- [x] Accept cash, approved electronic payment, bank-transfer record, partial payment, or split payment.
+- [x] Deduct stock from the POS branch.
+- [x] Record cashier and branch on every sale and receipt.
+- [x] Print the receipt.
+- [x] Prevent editing a completed sale.
+- [x] Require authorized reversal/refund, reason, and audit history for corrections.
+- [x] Clearly block completion if connectivity is lost in Phase 1.
 
 ### Result
 

@@ -7,7 +7,7 @@ export default async function PosLayout({
   const user = await requirePortalAccess("pos", "/pos");
   return (
     <>
-      <PortalNavigation portalAccess={user.portal_access} />
+      <PortalNavigation portalAccess={user.portal_access} managementModules={user.management_modules} />
       {children}
     </>
   );
