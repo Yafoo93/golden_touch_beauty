@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from .models import GalleryItem, Testimonial, WebsiteContent
+from .uploads import RestrictedImageField, validate_image_upload
 
 
 class PublicWebsiteContentSerializer(serializers.ModelSerializer):
@@ -60,6 +61,7 @@ class GalleryItemSerializer(serializers.ModelSerializer):
 
 
 class ManagementGalleryItemSerializer(serializers.ModelSerializer):
+    image = RestrictedImageField(write_only=True, required=False)
     image_url = serializers.SerializerMethodField()
     updated_by = serializers.SerializerMethodField()
 
@@ -86,11 +88,7 @@ class ManagementGalleryItemSerializer(serializers.ModelSerializer):
         return {"id": str(item.updated_by_id), "full_name": item.updated_by.full_name}
 
     def validate_image(self, image):
-        if image.size > 8 * 1024 * 1024:
-            raise serializers.ValidationError("Images cannot exceed 8 MB.")
-        if image.content_type not in {"image/jpeg", "image/png", "image/webp"}:
-            raise serializers.ValidationError("Upload a JPEG, PNG, or WebP image.")
-        return image
+        return validate_image_upload(image)
 
     def validate(self, attrs):
         if not attrs.get("image") and not (

@@ -10,6 +10,7 @@ from accounts.models import User
 from branches.models import Branch, BranchStaffAssignment
 from branches.permissions import can_access_branch
 from core.phone import is_international_phone_number, normalize_phone_number
+from core.uploads import RestrictedImageField, validate_image_upload
 from payments.services import issue_invoice_for_source
 from services.models import Service, ServiceBranchAvailability, ServicePriceOption
 
@@ -129,13 +130,16 @@ class BookingCreateSerializer(serializers.Serializer):
     conditions = serializers.CharField(required=False, allow_blank=True)
     previous_treatments = serializers.CharField(required=False, allow_blank=True)
     notes = serializers.CharField(required=False, allow_blank=True)
-    treatment_photo = serializers.ImageField(required=False)
+    treatment_photo = RestrictedImageField(required=False)
     photo_marketing_consent = serializers.BooleanField(default=False)
     payment_method = serializers.ChoiceField(choices=Booking.PaymentMethod.choices)
     source = serializers.ChoiceField(choices=Booking.Source.choices, default=Booking.Source.WEBSITE)
     customer_id = serializers.UUIDField(required=False)
     duplicate_override = serializers.BooleanField(default=False)
     duplicate_override_reason = serializers.CharField(required=False, allow_blank=True, max_length=300)
+
+    def validate_treatment_photo(self, image):
+        return validate_image_upload(image)
 
     def validate_recipient_phone(self, value):
         normalized = normalize_phone_number(value)

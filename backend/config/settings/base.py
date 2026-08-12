@@ -159,13 +159,13 @@ AUTHENTICATION_BACKENDS = ["accounts.backends.EmailOrPhoneBackend"]
 # Browser requests reach Django through a same-origin Next.js rewrite. Django
 # sessions stay in HTTP-only cookies and state-changing requests retain CSRF
 # protection. Direct cross-origin access is intended only for local development.
-FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:3000")
+FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:3000").rstrip("/")
 CORS_ALLOWED_ORIGINS = [FRONTEND_URL]
 CORS_ALLOW_CREDENTIALS = True
-CSRF_TRUSTED_ORIGINS = env.list(
-    "DJANGO_CSRF_TRUSTED_ORIGINS",
-    default=[FRONTEND_URL],
-)
+CSRF_TRUSTED_ORIGINS = [
+    origin.rstrip("/")
+    for origin in env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[FRONTEND_URL])
+]
 
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SECURE = env.bool("DJANGO_SESSION_COOKIE_SECURE")
@@ -176,6 +176,10 @@ SESSION_ENGINE = "django.contrib.sessions.backends.db"
 SESSION_SAVE_EVERY_REQUEST = False
 CSRF_COOKIE_SECURE = env.bool("DJANGO_CSRF_COOKIE_SECURE")
 CSRF_COOKIE_SAMESITE = "Lax"
+# The frontend reads this cookie only to echo the token in the X-CSRFToken
+# header. It contains no authentication credential; the session cookie remains
+# HTTP-only.
+CSRF_COOKIE_HTTPONLY = False
 
 SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT")
 SECURE_CONTENT_TYPE_NOSNIFF = True
@@ -210,6 +214,8 @@ REST_FRAMEWORK = {
         "auth-login": "10/minute",
         "auth-verify": "5/hour",
         "auth-reset": "5/hour",
+        "payment-customer": "10/minute",
+        "payment-pos": "30/minute",
     },
 }
 

@@ -11,6 +11,28 @@ htmlcov/
 backend/.env
 backend/media/
 backend/staticfiles/
+**/media/
+**/uploads/
+**/exports/
+**/backups/
+
+# Secrets and data snapshots
+.env
+.env.*
+!.env.example
+!**/.env.example
+*.db
+*.sql
+*.sql.gz
+*.dump
+*.bak
+*.pem
+*.key
+*.p12
+*.pfx
+.pgpass
+credentials.json
+service-account*.json
 
 # Node and Next.js
 frontend/node_modules/

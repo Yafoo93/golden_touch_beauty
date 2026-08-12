@@ -648,13 +648,13 @@ The owner can understand performance for the whole business and compare Makola w
 
 ### Security checks
 
-- [ ] Test every API permission and branch restriction.
-- [ ] Test that customers cannot access management endpoints.
-- [ ] Test file-upload type and size restrictions.
-- [ ] Test authentication and payment rate limits.
-- [ ] Run dependency and secret scans.
-- [ ] Review HTTPS, cookies, CSRF, CORS, trusted proxy, and production environment variables.
-- [ ] Verify that no secret or customer data is committed to Git.
+- [x] Test every API permission and branch restriction.
+- [x] Test that customers cannot access management endpoints.
+- [x] Test file-upload type and size restrictions.
+- [x] Test authentication and payment rate limits.
+- [x] Run dependency and secret scans.
+- [x] Review HTTPS, cookies, CSRF, CORS, trusted proxy, and production environment variables.
+- [x] Verify that no secret or customer data is committed to Git.
 
 ### Quality checks
 

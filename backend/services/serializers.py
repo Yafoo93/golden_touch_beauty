@@ -6,6 +6,7 @@ from django.utils.text import slugify
 
 from branches.serializers import PublicBranchSerializer
 from branches.models import Branch
+from core.uploads import RestrictedImageField, validate_image_upload
 
 from .models import (
     Service,
@@ -181,7 +182,7 @@ class ManagementServiceCreateSerializer(serializers.ModelSerializer):
         allow_empty=False,
         write_only=True,
     )
-    image = serializers.ImageField(write_only=True, required=False)
+    image = RestrictedImageField(write_only=True, required=False)
     price_options = serializers.CharField(write_only=True, required=False, default="[]")
     publication_state = serializers.ChoiceField(
         choices=Service.PublicationState.choices,
@@ -203,11 +204,7 @@ class ManagementServiceCreateSerializer(serializers.ModelSerializer):
         read_only_fields = ("id",)
 
     def validate_image(self, image):
-        if image.size > 8 * 1024 * 1024:
-            raise serializers.ValidationError("Images cannot exceed 8 MB.")
-        if image.content_type not in {"image/jpeg", "image/png", "image/webp"}:
-            raise serializers.ValidationError("Upload a JPEG, PNG, or WebP image.")
-        return image
+        return validate_image_upload(image)
 
     def validate(self, attrs):
         publication_state = attrs.pop("publication_state", None)

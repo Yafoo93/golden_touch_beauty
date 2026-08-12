@@ -4,7 +4,7 @@ from uuid import UUID
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import generics, status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
@@ -19,6 +19,7 @@ from branches.permissions import (
     can_access_branch,
 )
 from notifications.jobs import enqueue_email_job
+from core.throttling import UnsafeMethodScopedRateThrottle
 
 from .models import Booking, BookingBlock, BookingHistory
 from .reminders import schedule_booking_reminders
@@ -39,6 +40,8 @@ def booking_queryset():
 
 class CustomerBookingListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [UnsafeMethodScopedRateThrottle]
+    throttle_scope = "payment-customer"
 
     def get_serializer_class(self):
         return (
@@ -148,7 +151,10 @@ class CustomerBookingProposalView(APIView):
 
 
 class BookingAvailabilityView(APIView):
-    permission_classes = []
+    # Appointment availability is intentionally public so visitors can inspect
+    # open times before signing in.  Declare this explicitly: an empty list can
+    # otherwise conceal an accidental permission bypass during reviews.
+    permission_classes = [AllowAny]
 
     def get(self, request):
         branch = Branch.objects.filter(
