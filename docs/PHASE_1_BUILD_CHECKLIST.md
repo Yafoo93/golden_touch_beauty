@@ -605,38 +605,38 @@ A cashier can sell products and services at either branch while stock and revenu
 
 ### Report pages
 
-- [ ] `/management/reports/sales`.
-- [ ] `/management/reports/bookings`.
-- [ ] `/management/reports/products`.
-- [ ] `/management/reports/services`.
-- [ ] `/management/reports/inventory`.
-- [ ] `/management/reports/payments`.
-- [ ] `/management/reports/branches`.
+- [x] `/management/reports/sales` — branch-scoped online-order and POS revenue with date/source filters, daily totals, payment methods, and transaction detail.
+- [x] `/management/reports/bookings` — branch-scoped booking volume, status, source, value, duration, daily trend, and booking detail.
+- [x] `/management/reports/products` — branch-scoped online/POS product performance, units, revenue, and current stock health.
+- [x] `/management/reports/services` — branch-scoped booking/POS service demand, revenue, completion, duration, and daily performance.
+- [x] `/management/reports/inventory` — branch-scoped stock position, cost/retail valuation, stock health, and movement activity.
+- [x] `/management/reports/payments` — branch-scoped online/POS payment reconciliation by status, method, provider, source, and date.
+- [x] `/management/reports/branches` — cross-operational branch comparison for sales, bookings, products, services, payments, and stock health.
 
 ### Reports included in Phase 1
 
-- [ ] Daily, weekly, and monthly sales.
-- [ ] Product revenue and product gross profit.
-- [ ] Service revenue.
-- [ ] Appointment volume, cancellation, and no-show.
-- [ ] Popular services and best-selling products.
-- [ ] Payment-method totals.
-- [ ] Stock levels and movements.
-- [ ] Branch comparison.
-- [ ] Online orders and POS sales.
+- [x] Daily, weekly, and monthly sales — selectable interval on the branch-scoped sales report with reconciled online/POS totals.
+- [x] Product revenue and product gross profit — revenue minus immutable sale-time product cost snapshots, with COGS and gross-margin percentage.
+- [x] Service revenue — fully paid, non-cancelled booking service prices plus completed POS service lines, reported by service, source, day, branch, and selected period.
+- [x] Appointment volume, cancellation, and no-show — branch/date-filtered appointment totals with separate cancellation and no-show counts, rates, daily activity, status breakdown, and transaction detail.
+- [x] Popular services and best-selling products — top-five rankings by service occurrences and product units sold across bookings, online orders, and POS, with revenue as the tie-breaker.
+- [x] Payment-method totals — successful, attempted, refunded, online, POS, gross, and net amounts by method with failed and pending attempts excluded from collections.
+- [x] Stock levels and movements — current branch stock, reservations, availability, reorder health, valuation, movement-type totals, net changes, and a dated append-only movement ledger.
+- [x] Branch comparison — permission-scoped side-by-side sales share, booking outcomes, product revenue/profit, service revenue, collections, and current stock health for Makola and Tse Addo.
+- [x] Online orders and POS sales — reconciled revenue, transaction counts, channel shares, average sale values, date trends, branch totals, payment methods, and transaction detail.
 
 ### Export
 
-- [ ] PDF.
-- [ ] Excel.
-- [ ] CSV.
+- [x] PDF — professionally branded landscape report with Golden Touch letterhead, logo, branch contacts/locations/hours, filters, executive summary, detailed tables, confidentiality notice, and page numbers.
+- [x] Excel — genuine `.xlsx` workbook with branded summary, filter provenance, formatted audit sheets, frozen headers, and complete report data.
+- [x] CSV — UTF-8 export with report provenance, filter context, summary metrics, and complete detailed tables.
 
 ### Accuracy requirement
 
-- [ ] Every dashboard number has a written formula.
-- [ ] Refunds, reversals, cancellations, pending payments, and date boundaries are handled consistently.
-- [ ] Automated tests reconcile totals with raw transactions.
-- [ ] Estimated operating result is labeled as an estimate because full service costing is not yet available.
+- [x] Every dashboard number has a written formula — an in-system metric methodology register documents the management overview and all seven reports, including permission/filter scope, date basis, inclusions, exclusions, rates, averages, zero-denominator behavior, stock valuation, and revenue recognition.
+- [x] Refunds, reversals, cancellations, pending payments, and date boundaries are handled consistently — revenue excludes refunded/reversed/cancelled transactions and pending payments; refund reports retain gross collection then subtract the correction; booking demand preserves cancellations while recognized service revenue excludes cancelled, rejected, and unpaid bookings; correction activity uses its correction date; report boundaries are inclusive local calendar dates with regression coverage at both edges.
+- [x] Automated tests reconcile totals with raw transactions — independent ORM control totals validate sales, bookings, product units/revenue/COGS/profit, recognized service revenue, inventory balances/movements, payment gross/refunds/net, and branch totals; report summaries are also reconciled to their detailed ledgers.
+- [x] Estimated operating result is labeled as an estimate because full service costing is not yet available — branch reports calculate product gross profit plus recognized service revenue, while the UI, metric methodology, and exported reports explicitly warn that service consumables, labour, commissions, delivery costs, rent, utilities, taxes, and other operating expenses are not yet deducted.
 
 ### Result
 

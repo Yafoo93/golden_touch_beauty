@@ -125,6 +125,7 @@ export default async function ManagementPage({
           <span>Operating scope</span>
           <strong>{overview.staff.scope_label}</strong>
           <small>{overview.staff.is_owner ? "Business owner access" : "Assignment-based access"}</small>
+          <ButtonLink href="/management/reports/methodology" variant="outline" size="small">How numbers are calculated</ButtonLink>
         </div>
       </header>
 

@@ -5899,6 +5899,61 @@ textarea.form-field__control { min-height: 7rem; }
 @media (max-width: 42rem) { .pos-history > header, .pos-history__list article { align-items: stretch; flex-direction: column; } .pos-history__filters { grid-template-columns: 1fr; } .pos-history__list article > div:last-child { justify-items: start; text-align: left; } }
 @media (max-width: 36rem) { .portal-landing__panel > div { display: grid; } .portal-landing__panel .button { width: 100%; } }
 
+.management-sales-report { width: min(calc(100% - 2rem), 88rem); min-height: 70vh; margin-inline: auto; padding-block: clamp(2rem, 5vw, 4rem); }
+.management-sales-report > header { display: flex; align-items: flex-end; justify-content: space-between; gap: 1.5rem; margin-bottom: 1.75rem; }
+.management-sales-report > header p { color: var(--gold); font-size: .72rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+.management-sales-report > header h1 { margin-top: .35rem; font: 700 clamp(2.5rem, 6vw, 4.5rem)/1 Georgia, "Times New Roman", serif; }
+.management-sales-report > header span { display: block; margin-top: .65rem; color: #aaa59d; }
+.management-sales-report__filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto auto; align-items: end; gap: .75rem; padding: 1.1rem; border: 1px solid rgba(223,168,36,.24); border-radius: .65rem; background: #121212; }
+.management-sales-report__filters label { display: grid; gap: .4rem; color: #c7c1b8; font-size: .78rem; font-weight: 700; text-transform: uppercase; }
+.management-sales-report__filters input, .management-sales-report__filters select { min-height: 2.8rem; padding: .65rem .75rem; color: #f5f1e8; border: 1px solid #40361e; border-radius: .4rem; background: #090909; }
+.management-sales-report__filters button { min-height: 2.8rem; padding-inline: 1.1rem; border: 1px solid var(--gold); border-radius: .4rem; background: var(--gold); color: #080808; font-weight: 800; cursor: pointer; }
+.management-bookings-report__filters { grid-template-columns: repeat(5, minmax(0, 1fr)) auto auto; }
+.management-sales-interval__filters { grid-template-columns: repeat(5, minmax(0, 1fr)) auto auto; }
+.management-services-report__filters { grid-template-columns: repeat(3, minmax(0, 1fr)) repeat(3, minmax(9rem, 1fr)) auto auto; }
+.management-payments-report__filters { grid-template-columns: repeat(7, minmax(8rem, 1fr)) auto auto; }
+.management-report-note { margin-top: .75rem; padding: .75rem 1rem; border-left: 3px solid var(--gold); color: #c7c1b8; background: rgba(223,168,36,.08); }
+.management-sales-report__metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .8rem; margin-block: 1rem; }
+.management-sales-report__metrics article, .management-sales-report__breakdowns section, .management-sales-report__daily, .management-sales-report__transactions { border: 1px solid rgba(223,168,36,.2); border-radius: .65rem; background: #121212; }
+.management-sales-report__metrics article { display: grid; gap: .45rem; padding: 1.1rem; }
+.management-sales-report__metrics span, .management-sales-report small { color: #99938b; }
+.management-sales-report__metrics strong { color: var(--gold); font-size: clamp(1.2rem, 2vw, 1.65rem); }
+.management-sales-report__breakdowns { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.management-sales-report__breakdowns section, .management-sales-report__daily, .management-sales-report__transactions { padding: 1.25rem; }
+.management-sales-report h2 { margin-bottom: 1rem; font: 700 1.35rem Georgia, "Times New Roman", serif; }
+.management-sales-report__breakdowns article { display: flex; justify-content: space-between; gap: 1rem; padding-block: .8rem; border-top: 1px solid #2b271d; }
+.management-sales-report__breakdowns article div { display: grid; gap: .35rem; }
+.management-sales-report__breakdowns b, .management-sales-report__daily strong { color: var(--gold); white-space: nowrap; }
+.management-sales-report__daily, .management-sales-report__transactions { margin-top: 1rem; }
+.management-sales-report__daily article { display: grid; grid-template-columns: 9rem 6rem 1fr auto; gap: 1rem; align-items: center; padding: .75rem 0; border-top: 1px solid #2b271d; }
+.management-sales-report__transactions table { width: 100%; border-collapse: collapse; }
+.management-sales-report__transactions th, .management-sales-report__transactions td { padding: .8rem; border-bottom: 1px solid #2b271d; text-align: left; vertical-align: top; }
+.management-sales-report__transactions th { color: #a9a39a; font-size: .75rem; text-transform: uppercase; }
+.management-sales-report__transactions td:last-child { color: var(--gold); font-weight: 800; white-space: nowrap; }
+.management-sales-report__transactions td small { display: block; margin-top: .25rem; }
+.report-stock-state { display: inline-block; padding: .25rem .5rem; border-radius: 999px; font-size: .72rem; font-weight: 800; text-transform: uppercase; }
+.report-stock-state--healthy { color: #70df9b; background: rgba(36,148,80,.16); }
+.report-stock-state--low { color: #f2c34c; background: rgba(223,168,36,.16); }
+.report-stock-state--out { color: #ff8c8c; background: rgba(190,52,52,.18); }
+.payment-report-status { font-weight: 800; text-transform: capitalize; }
+.payment-report-status--succeeded { color: #70df9b; }
+.payment-report-status--pending { color: #f2c34c; }
+.payment-report-status--failed, .payment-report-status--cancelled, .payment-report-status--refunded { color: #ff8c8c; }
+.management-branch-comparison { display: grid; gap: 1rem; margin-top: 1rem; }
+.management-branch-comparison > article { padding: 1.25rem; border: 1px solid rgba(223,168,36,.2); border-radius: .65rem; background: #121212; }
+.management-branch-comparison > article > header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.management-branch-comparison header p { color: var(--gold); font-size: .72rem; font-weight: 800; letter-spacing: .12em; }
+.management-branch-comparison header h2 { margin: .3rem 0 0; }
+.management-branch-comparison dl { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .75rem; margin-top: 1rem; }
+.management-branch-comparison dl div { display: grid; gap: .35rem; padding: .9rem; border: 1px solid #2b271d; border-radius: .45rem; }
+.management-branch-comparison dt, .management-branch-comparison small { color: #99938b; }
+.management-branch-comparison dd { margin: 0; color: var(--gold); font-size: 1.2rem; font-weight: 800; }
+@media (max-width: 72rem) { .management-branch-comparison dl { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 36rem) { .management-branch-comparison dl { grid-template-columns: 1fr; } }
+@media (max-width: 72rem) { .management-sales-report__filters, .management-bookings-report__filters, .management-sales-interval__filters, .management-services-report__filters, .management-payments-report__filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } .management-sales-report__metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 52rem) { .management-sales-report > header, .management-sales-report__breakdowns { display: grid; } .management-sales-report__metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .management-sales-report__daily article { grid-template-columns: 1fr auto; } .management-sales-report__daily article small { grid-column: 1 / -1; } }
+@media (max-width: 36rem) { .management-sales-report__filters, .management-sales-report__metrics { grid-template-columns: 1fr; } }
+
 .product-detail-page { min-height: 100vh; padding-block: clamp(2rem, 5vw, 5rem); background: radial-gradient(circle at 80% 20%, rgba(223, 168, 36, 0.07), transparent 30rem), #080808; }
 .product-detail { width: min(calc(100% - 3rem), 78rem); margin-inline: auto; display: grid; grid-template-columns: minmax(0, 1fr) minmax(22rem, 0.9fr); gap: clamp(2rem, 6vw, 6rem); align-items: start; }
 .product-detail__gallery { position: sticky; top: 7rem; }
@@ -6071,3 +6126,107 @@ textarea.form-field__control { min-height: 7rem; }
 @keyframes cart-drawer-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
 @keyframes cart-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .cart-drawer, .cart-drawer__backdrop { animation: none; } }
+.management-report-exports {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin: 0.9rem 0 1.1rem;
+}
+
+.management-report-exports span {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.management-report-exports a {
+  border: 1px solid rgba(216, 166, 34, 0.5);
+  border-radius: 0.45rem;
+  color: var(--color-gold, #d8a622);
+  font-size: 0.86rem;
+  font-weight: 700;
+  padding: 0.55rem 0.8rem;
+  text-decoration: none;
+}
+
+.management-report-exports a:hover,
+.management-report-exports a:focus-visible {
+  background: #d8a622;
+  color: #080808;
+}
+
+.management-methodology {
+  display: grid;
+  gap: 2rem;
+  margin: 0 auto;
+  max-width: 1440px;
+  padding: clamp(2rem, 5vw, 4.5rem) clamp(1rem, 4vw, 4rem);
+}
+
+.management-methodology > header,
+.management-methodology > section > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.management-methodology > header p,
+.management-methodology > header span {
+  color: var(--gold, #d8a622);
+}
+
+.management-methodology > header h1 {
+  margin: 0.35rem 0;
+}
+
+.management-methodology__index {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.management-methodology__index a {
+  border: 1px solid rgba(216, 166, 34, 0.45);
+  border-radius: 999px;
+  color: #f4c542;
+  padding: 0.55rem 0.9rem;
+  text-decoration: none;
+}
+
+.management-methodology > section {
+  scroll-margin-top: 8rem;
+}
+
+.management-methodology > section > header {
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.management-methodology > section > header p {
+  color: #aaa39a;
+  max-width: 80ch;
+}
+
+.management-methodology table th:first-child {
+  min-width: 15rem;
+  text-align: left;
+}
+
+.management-methodology table td {
+  line-height: 1.6;
+}
+
+.management-methodology table td small {
+  display: block;
+  margin-top: 0.35rem;
+}
+
+@media (max-width: 700px) {
+  .management-methodology > header {
+    display: grid;
+  }
+}

@@ -16,6 +16,7 @@ from branches.models import Branch, BranchStaffAssignment
 from branches.permissions import IsOwnerOrAssignedBranchStaff, can_access_branch, get_accessible_branch_ids, is_owner
 from inventory.models import BranchInventory, StockMovement
 from services.models import Service
+from core.throttling import UnsafeMethodScopedRateThrottle
 
 from .models import POSPaymentEntry, POSSale, POSSaleLine
 
@@ -89,6 +90,8 @@ class POSCreateSerializer(serializers.Serializer):
 class POSSaleHistoryView(generics.ListAPIView):
     serializer_class = POSSaleHistorySerializer
     permission_classes = [IsOwnerOrAssignedBranchStaff]
+    throttle_classes = [UnsafeMethodScopedRateThrottle]
+    throttle_scope = "payment-pos"
     required_branch_roles = (
         BranchStaffAssignment.Role.MANAGER,
         BranchStaffAssignment.Role.CASHIER,
@@ -138,6 +141,7 @@ class POSSaleHistoryView(generics.ListAPIView):
                     "item_reference": str(variant.pk), "name": variant.product.name,
                     "option_name": variant.name, "sku": variant.sku,
                     "quantity": quantity, "unit_price": variant.selling_price,
+                    "unit_cost": variant.cost_price,
                 }
                 inventory_deductions.append((inventory, quantity))
             else:
@@ -153,8 +157,10 @@ class POSSaleHistoryView(generics.ListAPIView):
                     "item_reference": str(service.pk), "name": service.name,
                     "option_name": f"{service.duration_minutes} minutes", "sku": "",
                     "quantity": quantity, "unit_price": service.price,
+                    "unit_cost": Decimal("0.00"),
                 }
             snapshot["line_total"] = snapshot["unit_price"] * quantity
+            snapshot["line_cost"] = snapshot["unit_cost"] * quantity
             total += snapshot["line_total"]
             snapshots.append(snapshot)
 
@@ -289,6 +295,8 @@ class POSSaleCorrectionView(APIView):
     """Perform an auditable manager-authorized reversal or refund."""
 
     permission_classes = [IsOwnerOrAssignedBranchStaff]
+    throttle_classes = [UnsafeMethodScopedRateThrottle]
+    throttle_scope = "payment-pos"
     required_branch_roles = (BranchStaffAssignment.Role.MANAGER,)
 
     class InputSerializer(serializers.Serializer):
@@ -339,7 +347,7 @@ class POSSaleCorrectionView(APIView):
                 performed_by=request.user,
             )
 
-        sale.payment_entries.update(status=payment_entry_status)
+        sale.payment_entries.update(status=payment_entry_status, updated_at=timezone.now())
         POSSale.objects.filter(pk=sale.pk).update(
             status=target_status, payment_status=target_payment_status, updated_at=timezone.now(),
         )

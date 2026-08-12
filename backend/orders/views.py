@@ -18,6 +18,7 @@ from inventory.models import BranchInventory, StockMovement
 from products.models import CustomerCartItem
 from payments.services import issue_invoice_for_source
 from notifications.jobs import enqueue_email_job
+from core.throttling import UnsafeMethodScopedRateThrottle
 
 from .models import Order, OrderItem, StockReservation
 from .serializers import CheckoutCreateSerializer, OrderDetailSerializer, OrderSerializer
@@ -139,6 +140,8 @@ class CheckoutOptionsView(APIView):
 
 class CheckoutCreateView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [UnsafeMethodScopedRateThrottle]
+    throttle_scope = "payment-customer"
 
     @transaction.atomic
     def post(self, request):
@@ -244,8 +247,10 @@ class CheckoutCreateView(APIView):
                 sku=variant.sku,
                 image_path=product.image.url if product.image else product.image_path,
                 unit_price=variant.selling_price,
+                unit_cost=variant.cost_price,
                 quantity=cart_item.quantity,
                 line_total=line_total,
+                line_cost=variant.cost_price * cart_item.quantity,
             )
             inventory = inventory_by_variant[variant.id]
             inventory.quantity_reserved += cart_item.quantity
