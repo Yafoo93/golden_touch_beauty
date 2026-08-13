@@ -4,7 +4,7 @@ export function ReportExportActions({ report, filters }: { report: string; filte
   const href = (format: "pdf" | "xlsx" | "csv") => {
     const query = new URLSearchParams({ file_format: format });
     Object.entries(filters).forEach(([key, value]) => { if (value) query.set(key, value); });
-    return `/backend-api/reports/${report}/export?${query.toString()}`;
+    return `/backend-api/v1/reports/${report}/export?${query.toString()}`;
   };
   return <nav className="management-report-exports" aria-label="Export report">
     <span>Export:</span>
