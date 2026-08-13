@@ -40,6 +40,7 @@ frontend/.next/
 frontend/.next-dev/
 frontend/out/
 frontend/.env.local
+frontend/responsive-artifacts/
 
 # IDE and operating system
 .vscode/

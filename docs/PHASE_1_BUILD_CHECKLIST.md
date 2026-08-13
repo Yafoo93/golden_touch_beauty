@@ -658,7 +658,7 @@ The owner can understand performance for the whole business and compare Makola w
 
 ### Quality checks
 
-- [ ] Test mobile, tablet, laptop, and desktop layouts.
+- [x] Test mobile, tablet, laptop, and desktop layouts.
 - [ ] Test keyboard navigation and screen-reader labels.
 - [ ] Test Chrome, Edge, Firefox, and Safari where available.
 - [ ] Test slow network, failed requests, duplicate clicks, and browser refresh during checkout/booking.
