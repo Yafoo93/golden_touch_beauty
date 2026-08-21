@@ -69,7 +69,7 @@ class FeaturedProductSerializer(serializers.ModelSerializer):
 
     def get_image_path(self, product):
         if product.image:
-            return f"/{product.image.url.lstrip('/')}"
+            return product.image.url
         return product.image_path
 
 
@@ -187,7 +187,7 @@ class PublicProductDetailSerializer(serializers.ModelSerializer):
 
     def get_image_path(self, product):
         if product.image:
-            return f"/{product.image.url.lstrip('/')}"
+            return product.image.url
         return product.image_path
 
 
@@ -236,7 +236,7 @@ class ManagementProductListSerializer(serializers.ModelSerializer):
 
     def get_image_path(self, product):
         if product.image:
-            return f"/{product.image.url.lstrip('/')}"
+            return product.image.url
         return product.image_path
 
     def _stocks(self, product):

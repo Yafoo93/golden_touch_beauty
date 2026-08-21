@@ -5,6 +5,7 @@ from django.core.validators import MinValueValidator
 from django.db import models
 
 from core.models import BaseModel
+from core.storage import public_media_storage
 
 
 class ProductCategory(BaseModel):
@@ -32,7 +33,11 @@ class Product(BaseModel):
     slug = models.SlugField(max_length=200, unique=True)
     brand = models.CharField(max_length=150, blank=True)
     description = models.TextField()
-    image = models.ImageField(upload_to="products/%Y/%m/", blank=True)
+    image = models.ImageField(
+        upload_to="products/%Y/%m/",
+        storage=public_media_storage,
+        blank=True,
+    )
     image_path = models.CharField(max_length=255, blank=True)
     is_featured = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)

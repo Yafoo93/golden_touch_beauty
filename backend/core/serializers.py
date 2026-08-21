@@ -56,7 +56,7 @@ class GalleryItemSerializer(serializers.ModelSerializer):
 
     def get_image_url(self, item):
         if item.image:
-            return f"/{item.image.url.lstrip('/')}"
+            return item.image.url
         return item.image_path
 
 
@@ -79,7 +79,7 @@ class ManagementGalleryItemSerializer(serializers.ModelSerializer):
 
     def get_image_url(self, item):
         if item.image:
-            return f"/{item.image.url.lstrip('/')}"
+            return item.image.url
         return item.image_path
 
     def get_updated_by(self, item):

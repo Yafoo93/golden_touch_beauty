@@ -1,6 +1,20 @@
 import type { NextConfig } from "next";
 
+const publicMediaUrl =
+  process.env.NEXT_PUBLIC_MEDIA_URL ??
+  "https://pub-91c09dbd4fcd4ef5ac8c3b7c2cee9e23.r2.dev";
+const publicMediaHost = new URL(publicMediaUrl).hostname;
+
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: publicMediaHost,
+        pathname: "/**",
+      },
+    ],
+  },
   // Keep the live development compiler isolated from `next build`. Running a
   // production validation while `next dev` is open must not overwrite its
   // manifests and force repeated browser remounts.

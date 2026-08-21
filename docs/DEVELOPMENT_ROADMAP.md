@@ -2,7 +2,9 @@
 
 This checklist translates the Product Requirements Document (PRD) and approved UI reference into two production phases. It begins from the repository's current Django and Next.js foundations and ends with the wider operating platform described in the PRD. The PRD defines system behavior and always takes precedence where a screenshot differs; screenshots guide presentation and interaction styling only.
 
-For a simpler explanation showing exactly which pages and backend features are built at each stage, use the [Phase 1 Plain-Language Build Checklist](PHASE_1_BUILD_CHECKLIST.md).
+For simpler explanations showing exactly which pages and backend features are
+built at each stage, use the [Phase 1 Plain-Language Build Checklist](PHASE_1_BUILD_CHECKLIST.md)
+and the [Phase 2 Advanced Operations Build Checklist](PHASE_2_BUILD_CHECKLIST.md).
 
 ## Delivery strategy
 
@@ -59,7 +61,7 @@ Expand the launched multi-branch platform with staff roles and assignment, advan
 - [ ] Add formatting, linting, type checking, backend tests, frontend tests, and build checks to CI.
 - [x] Add structured logging, request IDs, safe error handling/reporting, and a database-aware health endpoint; deployment readiness checks remain part of staging.
 - [ ] Configure environment validation so missing variables fail with useful messages.
-- [ ] Configure media/file storage abstraction for local development and S3-compatible production storage.
+- [x] Configure media/file storage abstraction for local development and S3-compatible production storage.
 - [ ] Complete API pagination, filter, and naming conventions; `/api/v1/` versioning and the consistent error format are implemented.
 - [x] Create and run an idempotent seed command for Makola, Tse Addo, services, products, branch availability, variants, and opening stock; the owner account is managed separately.
 - [ ] Add a shared money representation using integer minor units or a fixed decimal type; never use floating-point values for money.

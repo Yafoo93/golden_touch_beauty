@@ -12,6 +12,10 @@ jobs:
         with:
           fetch-depth: 0
       - uses: gitleaks/gitleaks-action@v2
+        env:
+          # Required by the action to inspect pull-request commit ranges and
+          # report findings. GitHub provides this scoped token automatically.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: python scripts/check_tracked_sensitive_files.py
 
   backend:

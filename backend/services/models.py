@@ -4,6 +4,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from core.models import BaseModel
+from core.storage import public_media_storage
 
 
 class ServiceCategory(BaseModel):
@@ -64,7 +65,11 @@ class Service(BaseModel):
     duration_minutes = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(1440)]
     )
-    image = models.ImageField(upload_to="services/%Y/%m/", blank=True)
+    image = models.ImageField(
+        upload_to="services/%Y/%m/",
+        storage=public_media_storage,
+        blank=True,
+    )
     image_path = models.CharField(max_length=255, blank=True)
     is_clinic_service = models.BooleanField(default=True)
     is_home_service = models.BooleanField(default=False)

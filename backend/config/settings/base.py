@@ -2,6 +2,8 @@ from pathlib import Path
 
 import environ
 
+from .storage_validation import validate_r2_settings
+
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
@@ -13,6 +15,7 @@ env = environ.Env(
     DJANGO_SESSION_COOKIE_SECURE=(bool, False),
     DJANGO_CSRF_COOKIE_SECURE=(bool, False),
     DJANGO_LOG_LEVEL=(str, "INFO"),
+    USE_R2_STORAGE=(bool, False),
 )
 environ.Env.read_env(BASE_DIR / ".env")
 
@@ -32,6 +35,7 @@ INSTALLED_APPS = [
     "django_filters",
     "drf_spectacular",
     "drf_spectacular_sidecar",
+    "storages",
     "core",
     "accounts",
     "branches",
@@ -142,16 +146,84 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STORAGES = {
-    "default": {
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+USE_R2_STORAGE = env.bool("USE_R2_STORAGE")
+
+if USE_R2_STORAGE:
+    R2_ENDPOINT_URL = env("R2_ENDPOINT_URL")
+    R2_PUBLIC_BUCKET = env("R2_PUBLIC_BUCKET")
+    R2_PUBLIC_ACCESS_KEY_ID = env("R2_PUBLIC_ACCESS_KEY_ID")
+    R2_PUBLIC_SECRET_ACCESS_KEY = env("R2_PUBLIC_SECRET_ACCESS_KEY")
+    R2_PUBLIC_CUSTOM_DOMAIN = env("R2_PUBLIC_CUSTOM_DOMAIN")
+    R2_PRIVATE_BUCKET = env("R2_PRIVATE_BUCKET")
+    R2_PRIVATE_ACCESS_KEY_ID = env("R2_PRIVATE_ACCESS_KEY_ID")
+    R2_PRIVATE_SECRET_ACCESS_KEY = env("R2_PRIVATE_SECRET_ACCESS_KEY")
+    R2_PRIVATE_URL_EXPIRY = env.int("R2_PRIVATE_URL_EXPIRY", default=300)
+
+    validate_r2_settings(
+        endpoint_url=R2_ENDPOINT_URL,
+        public_bucket=R2_PUBLIC_BUCKET,
+        private_bucket=R2_PRIVATE_BUCKET,
+        public_custom_domain=R2_PUBLIC_CUSTOM_DOMAIN,
+        private_url_expiry=R2_PRIVATE_URL_EXPIRY,
+    )
+
+    common_r2_options = {
+        "endpoint_url": R2_ENDPOINT_URL,
+        "region_name": "auto",
+        "signature_version": "s3v4",
+        "default_acl": None,
+        "file_overwrite": False,
+    }
+    public_storage = {
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": {
+            **common_r2_options,
+            "bucket_name": R2_PUBLIC_BUCKET,
+            "access_key": R2_PUBLIC_ACCESS_KEY_ID,
+            "secret_key": R2_PUBLIC_SECRET_ACCESS_KEY,
+            "custom_domain": R2_PUBLIC_CUSTOM_DOMAIN,
+            "querystring_auth": False,
+            "url_protocol": "https:",
+            "object_parameters": {
+                "CacheControl": "public, max-age=86400",
+            },
+        },
+    }
+    private_storage = {
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": {
+            **common_r2_options,
+            "bucket_name": R2_PRIVATE_BUCKET,
+            "access_key": R2_PRIVATE_ACCESS_KEY_ID,
+            "secret_key": R2_PRIVATE_SECRET_ACCESS_KEY,
+            "custom_domain": None,
+            "querystring_auth": True,
+            "querystring_expire": R2_PRIVATE_URL_EXPIRY,
+        },
+    }
+else:
+    local_storage = {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
-    },
+        "OPTIONS": {
+            "location": MEDIA_ROOT,
+            "base_url": MEDIA_URL,
+        },
+    }
+    public_storage = local_storage
+    private_storage = local_storage
+
+STORAGES = {
+    # Default to private storage so newly added upload fields fail closed unless
+    # they are deliberately assigned to the public-media alias.
+    "default": private_storage,
+    "public_media": public_storage,
+    "private_media": private_storage,
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
-MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
 
 AUTH_USER_MODEL = "accounts.User"
 AUTHENTICATION_BACKENDS = ["accounts.backends.EmailOrPhoneBackend"]

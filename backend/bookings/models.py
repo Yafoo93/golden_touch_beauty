@@ -10,6 +10,7 @@ from django.db import models
 from django.utils import timezone
 
 from core.models import ActorTrackedModel, BaseModel, BranchScopedModel
+from core.storage import private_media_storage
 
 
 def booking_reference():
@@ -81,7 +82,11 @@ class Booking(BaseModel, BranchScopedModel, ActorTrackedModel):
     conditions = models.TextField(blank=True)
     previous_treatments = models.TextField(blank=True)
     notes = models.TextField(blank=True)
-    treatment_photo = models.ImageField(upload_to=booking_intake_path, blank=True)
+    treatment_photo = models.ImageField(
+        upload_to=booking_intake_path,
+        storage=private_media_storage,
+        blank=True,
+    )
     photo_marketing_consent = models.BooleanField(default=False)
     payment_method = models.CharField(
         max_length=20, choices=PaymentMethod.choices, default=PaymentMethod.ONLINE
