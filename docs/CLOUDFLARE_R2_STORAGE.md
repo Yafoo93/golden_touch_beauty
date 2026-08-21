@@ -21,12 +21,12 @@ Configure these in `backend/.env` locally and in the Render backend service:
 USE_R2_STORAGE=True
 R2_ENDPOINT_URL=https://<account-id>.r2.cloudflarestorage.com
 R2_PUBLIC_BUCKET=golden-touch-public-media
-R2_PUBLIC_ACCESS_KEY_ID=<public-bucket-token-id>
-R2_PUBLIC_SECRET_ACCESS_KEY=<public-bucket-token-secret>
+R2_PUBLIC_ACCESS_KEY_ID=
+R2_PUBLIC_SECRET_ACCESS_KEY=
 R2_PUBLIC_CUSTOM_DOMAIN=<public-hostname-without-https>
 R2_PRIVATE_BUCKET=golden-touch-private-media
-R2_PRIVATE_ACCESS_KEY_ID=<private-bucket-token-id>
-R2_PRIVATE_SECRET_ACCESS_KEY=<private-bucket-token-secret>
+R2_PRIVATE_ACCESS_KEY_ID=
+R2_PRIVATE_SECRET_ACCESS_KEY=
 R2_PRIVATE_URL_EXPIRY=300
 ```
 
