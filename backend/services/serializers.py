@@ -61,7 +61,7 @@ class FeaturedServiceSerializer(serializers.ModelSerializer):
 
     def get_image_path(self, service):
         if service.image:
-            return f"/{service.image.url.lstrip('/')}"
+            return service.image.url
         return service.image_path
 
 
@@ -152,7 +152,7 @@ class ManagementServiceListSerializer(serializers.ModelSerializer):
 
     def get_image_path(self, service):
         if service.image:
-            return f"/{service.image.url.lstrip('/')}"
+            return service.image.url
         return service.image_path
 
 
@@ -406,7 +406,7 @@ class ManagementServiceDetailSerializer(serializers.ModelSerializer):
 
     def get_image_path(self, service):
         if service.image:
-            return f"/{service.image.url.lstrip('/')}"
+            return service.image.url
         return service.image_path
 
     def get_price_options(self, service):

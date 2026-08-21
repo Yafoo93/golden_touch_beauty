@@ -2,6 +2,8 @@ import uuid
 
 from django.conf import settings
 from django.db import models
+
+from core.storage import public_media_storage
 from django.utils import timezone
 
 
@@ -117,7 +119,11 @@ class GalleryItem(BaseModel):
     title = models.CharField(max_length=150)
     category = models.CharField(max_length=120)
     alt_text = models.CharField(max_length=250)
-    image = models.ImageField(upload_to="gallery/%Y/%m/", blank=True)
+    image = models.ImageField(
+        upload_to="gallery/%Y/%m/",
+        storage=public_media_storage,
+        blank=True,
+    )
     image_path = models.CharField(max_length=255, blank=True)
     display_size = models.CharField(
         max_length=20,
