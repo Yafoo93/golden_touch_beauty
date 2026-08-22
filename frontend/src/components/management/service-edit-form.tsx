@@ -69,13 +69,13 @@ export function ServiceEditForm({ service, categories, branches }: { service: Ma
       <section className="management-form__section">
         <div className="management-form__section-heading"><h2>Image and branch availability</h2><p>Leave the file empty to keep the current image.</p></div>
         <div className="service-edit-form__image"><Image src={service.image_path || "/images/hero1.jpeg"} alt="" fill sizes="20rem" /></div>
-        <FormField name="image" label="Replace service image" type="file" accept="image/jpeg,image/png,image/webp" hint="Optional. JPEG, PNG, or WebP up to 8 MB." />
+        <FormField name="image" label="Replace condition/service image" type="file" accept="image/jpeg,image/png,image/webp" hint="Leave empty to keep the current mandatory main image. JPEG, PNG, or WebP up to 8 MB." />
         <div className="management-form__grid">
           <FormField name="before_image" label="Replace before image" type="file" accept="image/jpeg,image/png,image/webp" />
           <FormField name="after_image" label="Replace after image" type="file" accept="image/jpeg,image/png,image/webp" />
           <FormField name="result_photo_customer_email" label="Customer account email (optional)" type="email" defaultValue={service.result_photo_customer_email} maxLength={254} hint="Optional. It may be used to link the result images to an existing customer account." />
         </div>
-        <label className="management-form__toggle"><input type="checkbox" name="result_images_approved" defaultChecked={service.result_images_approved} /><span><strong>Approved for website</strong><small>Publishes the complete before-and-after pair on the service details page.</small></span></label>
+        <label className="management-form__toggle"><input type="checkbox" name="result_images_approved" defaultChecked={service.result_images_approved} /><span><strong>Show before/after pair on website</strong><small>Optional. This only has an effect when both result images have been uploaded.</small></span></label>
         <fieldset className="service-create-form__branches"><legend>Available branches *</legend>{branches.map((branch) => <label key={branch.id}><input type="checkbox" name="branch_ids" value={branch.id} defaultChecked={service.branch_ids.includes(branch.id)} /><span><strong>{branch.name}</strong><small>{branch.code}</small></span></label>)}</fieldset>
       </section>
       <section className="management-form__section">

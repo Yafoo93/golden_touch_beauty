@@ -365,10 +365,11 @@ class ManagementServiceCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"before_image": "Upload both the before and after image as one result pair."}
             )
+        # Result photographs are optional and must never prevent the service
+        # itself from being published. An approval checkbox submitted without
+        # a complete pair is treated as off.
         if approved and not (before and after):
-            raise serializers.ValidationError(
-                {"result_images_approved": "Upload a complete before-and-after image pair before approval."}
-            )
+            attrs["result_images_approved"] = False
         attrs["result_photo_customer"] = customer
         attrs["result_photo_consent_confirmed"] = consent
         attrs["result_photo_consent_reference"] = reference

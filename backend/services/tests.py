@@ -474,6 +474,46 @@ class PublicServiceCatalogueApiTests(TestCase):
         service.before_image.delete(save=False)
         service.after_image.delete(save=False)
 
+    def test_service_can_publish_without_optional_before_and_after_images(self):
+        owner = User.objects.create_superuser(
+            email="service-no-results-owner@example.com",
+            phone_number="+233241000135",
+            full_name="Service Without Results Owner",
+            password="OwnerPass123!",
+        )
+        self.client.force_login(owner)
+        png = base64.b64decode(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+        )
+        response = self.client.post(
+            reverse("services:management-list"),
+            {
+                "name": "Published Service Without Results",
+                "category_id": str(self.skin.id),
+                "short_description": "A service with only its condition image.",
+                "description": "Before and after result photographs are optional.",
+                "price_type": "starting_from",
+                "price": "350.00",
+                "duration_minutes": "60",
+                "image": SimpleUploadedFile("condition.png", png, content_type="image/png"),
+                "is_clinic_service": "true",
+                "requires_full_payment": "true",
+                "allows_pay_at_clinic": "true",
+                "result_images_approved": "true",
+                "publication_state": "published",
+                "branch_ids": [str(self.branch.id)],
+            },
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        service = Service.objects.get(name="Published Service Without Results")
+        self.assertTrue(service.is_published)
+        self.assertTrue(bool(service.image))
+        self.assertFalse(bool(service.before_image))
+        self.assertFalse(bool(service.after_image))
+        self.assertFalse(service.result_images_approved)
+        service.image.delete(save=False)
+
     def test_create_rejects_range_without_maximum_price(self):
         owner = User.objects.create_superuser(
             email="service-validation-owner@example.com",
