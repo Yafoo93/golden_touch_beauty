@@ -381,6 +381,87 @@ class PublicServiceCatalogueApiTests(TestCase):
         )
         service.image.delete(save=False)
 
+    def test_owner_can_save_result_images_without_customer_email_for_testing(self):
+        owner = User.objects.create_superuser(
+            email="service-result-test-owner@example.com",
+            phone_number="+233241000133",
+            full_name="Service Result Test Owner",
+            password="OwnerPass123!",
+        )
+        self.client.force_login(owner)
+        png = base64.b64decode(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+        )
+        response = self.client.post(
+            reverse("services:management-list"),
+            {
+                "name": "Unlinked Result Test Service",
+                "category_id": str(self.skin.id),
+                "short_description": "A private result-image test.",
+                "description": "A result pair may be tested before a customer is linked.",
+                "price_type": "starting_from",
+                "price": "400.00",
+                "duration_minutes": "90",
+                "image": SimpleUploadedFile("service.png", png, content_type="image/png"),
+                "before_image": SimpleUploadedFile("before.png", png, content_type="image/png"),
+                "after_image": SimpleUploadedFile("after.png", png, content_type="image/png"),
+                "is_clinic_service": "true",
+                "requires_full_payment": "true",
+                "allows_pay_at_clinic": "true",
+                "result_images_approved": "false",
+                "publication_state": "draft",
+                "branch_ids": [str(self.branch.id)],
+            },
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        service = Service.objects.get(name="Unlinked Result Test Service")
+        self.assertIsNone(service.result_photo_customer)
+        self.assertFalse(service.result_photo_consent_confirmed)
+        self.assertFalse(service.result_images_approved)
+        self.assertTrue(bool(service.before_image))
+        self.assertTrue(bool(service.after_image))
+        service.image.delete(save=False)
+        service.before_image.delete(save=False)
+        service.after_image.delete(save=False)
+
+    def test_result_images_without_customer_cannot_be_approved_publicly(self):
+        owner = User.objects.create_superuser(
+            email="service-result-approval-owner@example.com",
+            phone_number="+233241000134",
+            full_name="Service Result Approval Owner",
+            password="OwnerPass123!",
+        )
+        self.client.force_login(owner)
+        png = base64.b64decode(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+        )
+        response = self.client.post(
+            reverse("services:management-list"),
+            {
+                "name": "Unsafe Public Result Service",
+                "category_id": str(self.skin.id),
+                "short_description": "An invalid public result test.",
+                "description": "Unlinked photographs must not be published.",
+                "price_type": "starting_from",
+                "price": "400.00",
+                "duration_minutes": "90",
+                "image": SimpleUploadedFile("service.png", png, content_type="image/png"),
+                "before_image": SimpleUploadedFile("before.png", png, content_type="image/png"),
+                "after_image": SimpleUploadedFile("after.png", png, content_type="image/png"),
+                "is_clinic_service": "true",
+                "requires_full_payment": "true",
+                "allows_pay_at_clinic": "true",
+                "result_images_approved": "true",
+                "publication_state": "draft",
+                "branch_ids": [str(self.branch.id)],
+            },
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("result_images_approved", response.json()["error"]["details"])
+        self.assertFalse(Service.objects.filter(name="Unsafe Public Result Service").exists())
+
     def test_create_rejects_range_without_maximum_price(self):
         owner = User.objects.create_superuser(
             email="service-validation-owner@example.com",

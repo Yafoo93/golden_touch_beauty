@@ -375,17 +375,22 @@ class ManagementServiceCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"before_image": "Upload both the before and after image as one result pair."}
             )
-        if (before or after) and not customer:
-            raise serializers.ValidationError(
-                {"result_photo_customer_email": "Link the customer whose before-and-after images are being uploaded."}
-            )
-        if (before or after) and not consent:
+        if (before or after) and customer and not consent:
             raise serializers.ValidationError(
                 {"result_photo_customer_email": "This customer has not granted photograph advertising consent, or has withdrawn it."}
             )
         if approved and not (before and after):
             raise serializers.ValidationError(
                 {"result_images_approved": "A complete consented image pair is required before approval."}
+            )
+        if approved and not customer:
+            raise serializers.ValidationError(
+                {
+                    "result_images_approved": (
+                        "Link a consenting customer before approving result images for the website. "
+                        "Leave approval off to save an unlinked pair for testing."
+                    )
+                }
             )
         if approved and not consent:
             attrs["result_images_approved"] = False
