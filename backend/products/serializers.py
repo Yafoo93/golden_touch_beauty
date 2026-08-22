@@ -420,10 +420,20 @@ class ManagementProductCreateSerializer(serializers.ModelSerializer):
     initial_variant_name = serializers.CharField(max_length=120, write_only=True)
     initial_sku = serializers.CharField(max_length=80, write_only=True)
     initial_selling_price = serializers.DecimalField(
-        max_digits=12, decimal_places=2, min_value=0, write_only=True
+        max_digits=12,
+        decimal_places=2,
+        min_value=0,
+        required=False,
+        allow_null=True,
+        write_only=True,
     )
     initial_cost_price = serializers.DecimalField(
-        max_digits=12, decimal_places=2, min_value=0, write_only=True
+        max_digits=12,
+        decimal_places=2,
+        min_value=0,
+        required=False,
+        allow_null=True,
+        write_only=True,
     )
     initial_is_preorder = serializers.BooleanField(default=False, write_only=True)
     initial_estimated_availability_date = serializers.DateField(
@@ -501,6 +511,15 @@ class ManagementProductCreateSerializer(serializers.ModelSerializer):
         attrs["is_published"] = state == "published"
         if attrs.get("price_type") == Product.PriceType.CONTACT:
             attrs["initial_selling_price"] = 0
+            attrs["initial_cost_price"] = 0
+        else:
+            price_errors = {}
+            if attrs.get("initial_selling_price") is None:
+                price_errors["initial_selling_price"] = "Selling price is required for fixed-price products."
+            if attrs.get("initial_cost_price") is None:
+                price_errors["initial_cost_price"] = "Cost price is required for fixed-price products."
+            if price_errors:
+                raise serializers.ValidationError(price_errors)
         if attrs.get("initial_is_preorder") and not attrs.get("initial_estimated_availability_date"):
             raise serializers.ValidationError({"initial_estimated_availability_date": "An estimated availability date is required for pre-orders."})
         return attrs
@@ -648,10 +667,10 @@ class ProductVariantInputSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=120)
     sku = serializers.CharField(max_length=80)
     selling_price = serializers.DecimalField(
-        max_digits=12, decimal_places=2, min_value=0
+        max_digits=12, decimal_places=2, min_value=0, required=False, allow_null=True
     )
     cost_price = serializers.DecimalField(
-        max_digits=12, decimal_places=2, min_value=0
+        max_digits=12, decimal_places=2, min_value=0, required=False, allow_null=True
     )
     is_preorder = serializers.BooleanField(default=False)
     estimated_availability_date = serializers.DateField(
@@ -711,6 +730,21 @@ class ManagementProductUpdateSerializer(serializers.ModelSerializer):
         serializer = ProductVariantInputSerializer(data=raw_variants, many=True)
         serializer.is_valid(raise_exception=True)
         variants = serializer.validated_data
+        price_type = attrs.get("price_type", self.instance.price_type)
+        price_errors = []
+        for item in variants:
+            if price_type == Product.PriceType.CONTACT:
+                item["selling_price"] = 0
+                item["cost_price"] = 0
+            else:
+                item_errors = {}
+                if item.get("selling_price") is None:
+                    item_errors["selling_price"] = "Required for fixed-price products."
+                if item.get("cost_price") is None:
+                    item_errors["cost_price"] = "Required for fixed-price products."
+                price_errors.append(item_errors)
+        if price_type != Product.PriceType.CONTACT and any(price_errors):
+            raise serializers.ValidationError({"variants": price_errors})
         ids = [item["id"] for item in variants if item.get("id")]
         if len(ids) != len(set(ids)):
             raise serializers.ValidationError(

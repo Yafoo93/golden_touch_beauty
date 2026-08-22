@@ -143,7 +143,9 @@ export function ProductCard({
           </span>
         </div>
         <div className="catalogue-card__footer">
-          <p className="catalogue-card__price">{priceType === "contact" ? "Contact for price" : formatGhanaCedis(price)}</p>
+          {priceType !== "contact" ? (
+            <p className="catalogue-card__price">{formatGhanaCedis(price)}</p>
+          ) : null}
           <div className="product-card__actions">
             <ButtonLink
               href={detailsHref}

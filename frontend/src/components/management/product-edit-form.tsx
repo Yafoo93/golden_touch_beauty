@@ -74,6 +74,7 @@ export function ProductEditForm({
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+  const [priceType, setPriceType] = useState<"fixed" | "contact">(product.price_type);
   const [variants, setVariants] = useState<EditableVariant[]>(
     product.variants.map((variant) => ({
       key: variant.id,
@@ -174,7 +175,7 @@ export function ProductEditForm({
               {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
             </select>
           </div>
-          <div className="form-field"><label className="form-field__label" htmlFor="edit-product-price-type">Customer pricing *</label><select className="form-field__control" id="edit-product-price-type" name="price_type" defaultValue={product.price_type} required><option value="fixed">Show selling price</option><option value="contact">Contact for price via branch WhatsApp</option></select></div>
+          <div className="form-field"><label className="form-field__label" htmlFor="edit-product-price-type">Customer pricing *</label><select className="form-field__control" id="edit-product-price-type" name="price_type" value={priceType} onChange={(event) => setPriceType(event.target.value as "fixed" | "contact")} required><option value="fixed">Show selling price</option><option value="contact">Contact for price via branch WhatsApp</option></select></div>
           <div className="form-field">
             <label className="form-field__label" htmlFor="edit-product-state">Publication state *</label>
             <select className="form-field__control" id="edit-product-state" name="publication_state" defaultValue={product.publication_state} required>
@@ -216,8 +217,10 @@ export function ProductEditForm({
               <div className="management-form__grid">
                 <FormField label="Variant name" value={variant.name} onChange={(event) => updateVariant(variant.key, { name: event.target.value })} required />
                 <FormField label="SKU" value={variant.sku} onChange={(event) => updateVariant(variant.key, { sku: event.target.value })} required />
-                <FormField label="Selling price (GHS)" type="number" min={0} step="0.01" value={variant.selling_price} onChange={(event) => updateVariant(variant.key, { selling_price: event.target.value })} required />
-                <FormField label="Cost price (GHS)" type="number" min={0} step="0.01" value={variant.cost_price} onChange={(event) => updateVariant(variant.key, { cost_price: event.target.value })} required />
+                {priceType === "fixed" ? <>
+                  <FormField label="Selling price (GHS)" type="number" min={0} step="0.01" value={variant.selling_price} onChange={(event) => updateVariant(variant.key, { selling_price: event.target.value })} required />
+                  <FormField label="Cost price (GHS)" type="number" min={0} step="0.01" value={variant.cost_price} onChange={(event) => updateVariant(variant.key, { cost_price: event.target.value })} required />
+                </> : null}
                 <FormField label="Estimated availability" type="date" value={variant.estimated_availability_date} onChange={(event) => updateVariant(variant.key, { estimated_availability_date: event.target.value })} />
                 <div className="product-variant-editor__toggles">
                   <label className="management-form__toggle"><input type="checkbox" checked={variant.is_preorder} onChange={(event) => updateVariant(variant.key, { is_preorder: event.target.checked })} /><span><strong>Pre-order</strong><small>May sell before stock arrives.</small></span></label>

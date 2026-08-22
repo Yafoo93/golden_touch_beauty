@@ -39,6 +39,7 @@ export function ProductCreateForm({
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+  const [priceType, setPriceType] = useState<"fixed" | "contact">("fixed");
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -111,7 +112,7 @@ export function ProductCreateForm({
               ))}
             </select>
           </div>
-          <div className="form-field"><label className="form-field__label" htmlFor="product-price-type">Customer pricing *</label><select className="form-field__control" id="product-price-type" name="price_type" defaultValue="fixed" required><option value="fixed">Show selling price</option><option value="contact">Contact for price via branch WhatsApp</option></select></div>
+          <div className="form-field"><label className="form-field__label" htmlFor="product-price-type">Customer pricing *</label><select className="form-field__control" id="product-price-type" name="price_type" value={priceType} onChange={(event) => setPriceType(event.target.value as "fixed" | "contact")} required><option value="fixed">Show selling price</option><option value="contact">Contact for price via branch WhatsApp</option></select></div>
           <div className="form-field">
             <label className="form-field__label" htmlFor="product-state">
               Publication state *
@@ -161,8 +162,10 @@ export function ProductCreateForm({
         <div className="management-form__grid">
           <FormField name="initial_variant_name" label="Variant name" defaultValue="Standard" maxLength={120} required />
           <FormField name="initial_sku" label="SKU" maxLength={80} required />
-          <FormField name="initial_selling_price" label="Selling price (GHS)" type="number" min={0} step="0.01" required />
-          <FormField name="initial_cost_price" label="Cost price (GHS)" type="number" min={0} step="0.01" required />
+          {priceType === "fixed" ? <>
+            <FormField name="initial_selling_price" label="Selling price (GHS)" type="number" min={0} step="0.01" required />
+            <FormField name="initial_cost_price" label="Cost price (GHS)" type="number" min={0} step="0.01" required />
+          </> : <p className="management-form__wide">Selling and cost prices are not required. Customers will request the current price through WhatsApp.</p>}
           <FormField name="initial_estimated_availability_date" label="Estimated availability" type="date" hint="Required when pre-order is enabled." />
           <label className="management-form__toggle">
             <input type="checkbox" name="initial_is_preorder" />
