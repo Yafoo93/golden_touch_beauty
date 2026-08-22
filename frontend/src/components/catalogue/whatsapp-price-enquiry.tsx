@@ -25,7 +25,7 @@ export function WhatsAppPriceEnquiry({ itemType, itemName, sku, branches, compac
   }
   if (!usable.length) return <p>Contact the branch for the current price.</p>;
   return <div className={compact ? "price-enquiry price-enquiry--compact" : "price-enquiry"}>
-    {usable.length > 1 ? <select aria-label="Branch for price enquiry" value={code} onChange={(event) => setCode(event.target.value)}>{usable.map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}</select> : null}
+    {!compact && usable.length > 1 ? <select aria-label="Branch for price enquiry" value={code} onChange={(event) => setCode(event.target.value)}>{usable.map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}</select> : null}
     <Button type="button" size="small" onClick={enquire}>Contact for price</Button>
   </div>;
 }
