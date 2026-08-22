@@ -73,9 +73,9 @@ export function ServiceEditForm({ service, categories, branches }: { service: Ma
         <div className="management-form__grid">
           <FormField name="before_image" label="Replace before image" type="file" accept="image/jpeg,image/png,image/webp" />
           <FormField name="after_image" label="Replace after image" type="file" accept="image/jpeg,image/png,image/webp" />
-          <FormField name="result_photo_customer_email" label="Customer account email (optional)" type="email" defaultValue={service.result_photo_customer_email} maxLength={254} hint="Optional for testing. Unlinked before/after images remain private; publication follows a linked customer's live consent preference." />
+          <FormField name="result_photo_customer_email" label="Customer account email (optional)" type="email" defaultValue={service.result_photo_customer_email} maxLength={254} hint="Optional. It may be used to link the result images to an existing customer account." />
         </div>
-        <label className="management-form__toggle"><input type="checkbox" name="result_images_approved" defaultChecked={service.result_images_approved} /><span><strong>Approved for website</strong><small>Only approved pairs are returned by the public API.</small></span></label>
+        <label className="management-form__toggle"><input type="checkbox" name="result_images_approved" defaultChecked={service.result_images_approved} /><span><strong>Approved for website</strong><small>Publishes the complete before-and-after pair on the service details page.</small></span></label>
         <fieldset className="service-create-form__branches"><legend>Available branches *</legend>{branches.map((branch) => <label key={branch.id}><input type="checkbox" name="branch_ids" value={branch.id} defaultChecked={service.branch_ids.includes(branch.id)} /><span><strong>{branch.name}</strong><small>{branch.code}</small></span></label>)}</fieldset>
       </section>
       <section className="management-form__section">

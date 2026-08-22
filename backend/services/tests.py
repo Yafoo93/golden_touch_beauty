@@ -425,7 +425,7 @@ class PublicServiceCatalogueApiTests(TestCase):
         service.before_image.delete(save=False)
         service.after_image.delete(save=False)
 
-    def test_result_images_without_customer_cannot_be_approved_publicly(self):
+    def test_result_images_without_customer_can_be_approved_publicly(self):
         owner = User.objects.create_superuser(
             email="service-result-approval-owner@example.com",
             phone_number="+233241000134",
@@ -439,10 +439,10 @@ class PublicServiceCatalogueApiTests(TestCase):
         response = self.client.post(
             reverse("services:management-list"),
             {
-                "name": "Unsafe Public Result Service",
+                "name": "Approved Public Result Service",
                 "category_id": str(self.skin.id),
-                "short_description": "An invalid public result test.",
-                "description": "Unlinked photographs must not be published.",
+                "short_description": "A public result-image test.",
+                "description": "Management may approve an unlinked result pair.",
                 "price_type": "starting_from",
                 "price": "400.00",
                 "duration_minutes": "90",
@@ -453,14 +453,26 @@ class PublicServiceCatalogueApiTests(TestCase):
                 "requires_full_payment": "true",
                 "allows_pay_at_clinic": "true",
                 "result_images_approved": "true",
-                "publication_state": "draft",
+                "publication_state": "published",
                 "branch_ids": [str(self.branch.id)],
             },
         )
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("result_images_approved", response.json()["error"]["details"])
-        self.assertFalse(Service.objects.filter(name="Unsafe Public Result Service").exists())
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        service = Service.objects.get(name="Approved Public Result Service")
+        self.assertIsNone(service.result_photo_customer)
+        self.assertTrue(service.result_images_approved)
+
+        detail_response = self.client.get(
+            reverse("services:detail", args=[service.slug])
+        )
+        self.assertEqual(detail_response.status_code, status.HTTP_200_OK)
+        self.assertTrue(detail_response.json()["has_result_images"])
+        self.assertIsNotNone(detail_response.json()["before_image_url"])
+        self.assertIsNotNone(detail_response.json()["after_image_url"])
+        service.image.delete(save=False)
+        service.before_image.delete(save=False)
+        service.after_image.delete(save=False)
 
     def test_create_rejects_range_without_maximum_price(self):
         owner = User.objects.create_superuser(

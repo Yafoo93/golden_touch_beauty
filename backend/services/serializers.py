@@ -69,20 +69,10 @@ class FeaturedServiceSerializer(serializers.ModelSerializer):
         return service.image_path
 
     def get_has_result_images(self, service):
-        customer_id = service.result_photo_customer_id
-        consent_is_active = bool(
-            customer_id
-            and CustomerConsent.objects.filter(
-                user_id=customer_id,
-                photograph_consent=True,
-            ).exists()
-        )
         return bool(
             service.before_image
             and service.after_image
-            and service.result_photo_consent_confirmed
             and service.result_images_approved
-            and consent_is_active
         )
 
 
@@ -375,25 +365,10 @@ class ManagementServiceCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"before_image": "Upload both the before and after image as one result pair."}
             )
-        if (before or after) and customer and not consent:
-            raise serializers.ValidationError(
-                {"result_photo_customer_email": "This customer has not granted photograph advertising consent, or has withdrawn it."}
-            )
         if approved and not (before and after):
             raise serializers.ValidationError(
-                {"result_images_approved": "A complete consented image pair is required before approval."}
+                {"result_images_approved": "Upload a complete before-and-after image pair before approval."}
             )
-        if approved and not customer:
-            raise serializers.ValidationError(
-                {
-                    "result_images_approved": (
-                        "Link a consenting customer before approving result images for the website. "
-                        "Leave approval off to save an unlinked pair for testing."
-                    )
-                }
-            )
-        if approved and not consent:
-            attrs["result_images_approved"] = False
         attrs["result_photo_customer"] = customer
         attrs["result_photo_consent_confirmed"] = consent
         attrs["result_photo_consent_reference"] = reference
