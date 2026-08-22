@@ -73,9 +73,9 @@ export function ServiceCreateForm({ categories, branches }: { categories: Servic
         <div className="management-form__grid">
           <FormField name="before_image" label="Before image" type="file" accept="image/jpeg,image/png,image/webp" hint="Optional; upload only with explicit client consent." />
           <FormField name="after_image" label="After image" type="file" accept="image/jpeg,image/png,image/webp" hint="Must be supplied together with the before image." />
-          <FormField name="result_photo_customer_email" label="Customer account email" type="email" maxLength={254} hint="The account must have active photograph-advertising consent." />
+          <FormField name="result_photo_customer_email" label="Customer account email (optional)" type="email" maxLength={254} hint="Optional for testing. Without a consenting customer, the before/after pair is saved privately and cannot be approved for the website." />
         </div>
-        <label className="management-form__toggle"><input type="checkbox" name="result_images_approved" /><span><strong>Approve pair for website</strong><small>Both images were reviewed and contain no unintended sensitive information.</small></span></label>
+        <label className="management-form__toggle"><input type="checkbox" name="result_images_approved" /><span><strong>Approve pair for website</strong><small>Requires a linked customer with active photograph-advertising consent.</small></span></label>
         <fieldset className="service-create-form__branches"><legend>Available branches *</legend>{branches.map((branch) => <label key={branch.id}><input type="checkbox" name="branch_ids" value={branch.id} /><span><strong>{branch.name}</strong><small>{branch.code}</small></span></label>)}</fieldset>
       </section>
 
