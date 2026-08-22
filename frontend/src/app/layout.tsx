@@ -16,9 +16,9 @@ export const metadata: Metadata = {
   description:
     "Beauty services, appointment booking, and premium products in Accra.",
   icons: {
-    icon: "/images/logo.png",
-    shortcut: "/images/logo.png",
-    apple: "/images/logo.png",
+    icon: "/images/favicon.png",
+    shortcut: "/images/favicon.png",
+    apple: "/images/favicon.png",
   },
 };
 
