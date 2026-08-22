@@ -24,6 +24,10 @@ class ProductCategory(BaseModel):
 
 
 class Product(BaseModel):
+    class PriceType(models.TextChoices):
+        FIXED = "fixed", "Fixed price"
+        CONTACT = "contact", "Contact for price"
+
     category = models.ForeignKey(
         ProductCategory,
         on_delete=models.PROTECT,
@@ -33,6 +37,11 @@ class Product(BaseModel):
     slug = models.SlugField(max_length=200, unique=True)
     brand = models.CharField(max_length=150, blank=True)
     description = models.TextField()
+    price_type = models.CharField(
+        max_length=20,
+        choices=PriceType.choices,
+        default=PriceType.FIXED,
+    )
     image = models.ImageField(
         upload_to="products/%Y/%m/",
         storage=public_media_storage,

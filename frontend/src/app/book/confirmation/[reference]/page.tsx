@@ -14,6 +14,7 @@ type BookingConfirmation = {
   preferred_start: string;
   total_duration_minutes: number;
   total_amount: string;
+  pricing_status: "final" | "estimate";
   recipient_name: string;
   payment_method: string;
   payment_status: string;
@@ -150,9 +151,10 @@ export default async function BookingConfirmationPage({
                 <dd>{result.booking.total_duration_minutes} minutes</dd>
               </div>
               <div>
-                <dt>Total</dt>
+                <dt>{result.booking.pricing_status === "estimate" ? "Starting estimate" : "Total"}</dt>
                 <dd>{formatGhanaCedis(result.booking.total_amount)}</dd>
               </div>
+              {result.booking.pricing_status === "estimate" ? <div><dt>Final price</dt><dd>Management will confirm it before payment is requested.</dd></div> : null}
               <div>
                 <dt>Payment</dt>
                 <dd>

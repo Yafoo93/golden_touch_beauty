@@ -15,6 +15,7 @@ export type ProductVariant = {
     branch_id: string;
     branch_code: string;
     branch_name: string;
+    whatsapp_number: string;
   }[];
 };
 export type ProductDetail = {
@@ -27,6 +28,7 @@ export type ProductDetail = {
   image_path: string;
   images: string[];
   variants: ProductVariant[];
+  price_type: "fixed" | "contact";
 };
 
 export type PublicProductSummary = {
@@ -42,6 +44,8 @@ export type PublicProductSummary = {
   sku: string | null;
   in_stock: boolean;
   availability: "in_stock" | "preorder" | "out_of_stock";
+  price_type: "fixed" | "contact";
+  contact_branches: { code: string; name: string; whatsapp_number: string }[];
 };
 
 export function productSummaryToCard(
@@ -65,6 +69,8 @@ export function productSummaryToCard(
         : product.availability === "out_of_stock"
           ? "Unavailable"
           : undefined,
+    priceType: product.price_type,
+    contactBranches: product.contact_branches,
   };
 }
 

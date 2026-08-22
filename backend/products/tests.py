@@ -872,7 +872,7 @@ class ManagementProductListApiTests(TestCase):
                             "selling_price": "260.00",
                             "cost_price": "140.00",
                             "is_preorder": True,
-                            "estimated_availability_date": None,
+                            "estimated_availability_date": "2099-12-31",
                             "is_active": True,
                             "stocks": [
                                 {

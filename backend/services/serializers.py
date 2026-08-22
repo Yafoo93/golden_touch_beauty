@@ -6,6 +6,8 @@ from django.utils.text import slugify
 
 from branches.serializers import PublicBranchSerializer
 from branches.models import Branch
+from accounts.models import User
+from customers.models import CustomerConsent
 from core.uploads import RestrictedImageField, validate_image_upload
 
 from .models import (
@@ -38,6 +40,7 @@ class FeaturedServiceSerializer(serializers.ModelSerializer):
     category = serializers.CharField(source="category.name", read_only=True)
     available_at = serializers.SerializerMethodField()
     image_path = serializers.SerializerMethodField()
+    has_result_images = serializers.SerializerMethodField()
 
     class Meta:
         model = Service
@@ -49,6 +52,7 @@ class FeaturedServiceSerializer(serializers.ModelSerializer):
             "price",
             "duration_minutes",
             "image_path",
+            "has_result_images",
             "available_at",
         )
 
@@ -64,10 +68,28 @@ class FeaturedServiceSerializer(serializers.ModelSerializer):
             return service.image.url
         return service.image_path
 
+    def get_has_result_images(self, service):
+        customer_id = service.result_photo_customer_id
+        consent_is_active = bool(
+            customer_id
+            and CustomerConsent.objects.filter(
+                user_id=customer_id,
+                photograph_consent=True,
+            ).exists()
+        )
+        return bool(
+            service.before_image
+            and service.after_image
+            and service.result_photo_consent_confirmed
+            and service.result_images_approved
+            and consent_is_active
+        )
+
 
 class PublicServiceSerializer(FeaturedServiceSerializer):
     category_slug = serializers.CharField(source="category.slug", read_only=True)
     price_options = serializers.SerializerMethodField()
+    available_branches = serializers.SerializerMethodField()
 
     class Meta(FeaturedServiceSerializer.Meta):
         fields = ("id",) + FeaturedServiceSerializer.Meta.fields + (
@@ -76,11 +98,20 @@ class PublicServiceSerializer(FeaturedServiceSerializer):
             "pricing_notes",
             "allows_pay_at_clinic",
             "price_options",
+            "available_branches",
         )
 
     def get_price_options(self, service):
         options = [option for option in service.price_options.all() if option.is_active]
         return ServicePriceOptionSerializer(options, many=True).data
+
+    def get_available_branches(self, service):
+        branches = [
+            availability.branch
+            for availability in service.branch_availability.all()
+            if availability.is_available and availability.branch.is_active
+        ]
+        return PublicBranchSerializer(branches, many=True).data
 
 
 class PublicServiceCategorySerializer(serializers.ModelSerializer):
@@ -95,7 +126,8 @@ class PublicServiceDetailSerializer(PublicServiceSerializer):
         source="get_price_type_display",
         read_only=True,
     )
-    available_branches = serializers.SerializerMethodField()
+    before_image_url = serializers.SerializerMethodField()
+    after_image_url = serializers.SerializerMethodField()
 
     class Meta(PublicServiceSerializer.Meta):
         fields = PublicServiceSerializer.Meta.fields + (
@@ -105,19 +137,22 @@ class PublicServiceDetailSerializer(PublicServiceSerializer):
             "is_clinic_service",
             "is_home_service",
             "requires_full_payment",
-            "allows_pay_at_clinic",
             "is_consultation",
-            "available_branches",
-            "price_options",
+            "before_image_url",
+            "after_image_url",
         )
 
-    def get_available_branches(self, service):
-        branches = [
-            availability.branch
-            for availability in service.branch_availability.all()
-            if availability.is_available and availability.branch.is_active
-        ]
-        return PublicBranchSerializer(branches, many=True).data
+    def _approved_result_url(self, service, field):
+        if not self.get_has_result_images(service):
+            return None
+        image = getattr(service, field)
+        return image.url if image else None
+
+    def get_before_image_url(self, service):
+        return self._approved_result_url(service, "before_image")
+
+    def get_after_image_url(self, service):
+        return self._approved_result_url(service, "after_image")
 
 
 
@@ -183,6 +218,11 @@ class ManagementServiceCreateSerializer(serializers.ModelSerializer):
         write_only=True,
     )
     image = RestrictedImageField(write_only=True, required=False)
+    before_image = RestrictedImageField(write_only=True, required=False)
+    after_image = RestrictedImageField(write_only=True, required=False)
+    result_photo_customer_email = serializers.EmailField(
+        write_only=True, required=False, allow_blank=True
+    )
     price_options = serializers.CharField(write_only=True, required=False, default="[]")
     publication_state = serializers.ChoiceField(
         choices=Service.PublicationState.choices,
@@ -195,15 +235,28 @@ class ManagementServiceCreateSerializer(serializers.ModelSerializer):
             "id", "name", "category_id", "short_description", "description",
             "price_type", "price", "maximum_price", "pricing_notes",
             "duration_minutes", "image", "is_clinic_service",
+            "before_image", "after_image", "result_photo_consent_confirmed",
+            "result_photo_consent_reference", "result_images_approved",
+            "result_photo_customer_email",
             "is_home_service", "requires_full_payment", "allows_pay_at_clinic",
             "is_consultation", "is_featured", "is_active", "is_published",
             "branch_ids",
             "price_options",
             "publication_state",
         )
-        read_only_fields = ("id",)
+        read_only_fields = (
+            "id",
+            "result_photo_consent_confirmed",
+            "result_photo_consent_reference",
+        )
 
     def validate_image(self, image):
+        return validate_image_upload(image)
+
+    def validate_before_image(self, image):
+        return validate_image_upload(image)
+
+    def validate_after_image(self, image):
         return validate_image_upload(image)
 
     def validate(self, attrs):
@@ -249,7 +302,7 @@ class ManagementServiceCreateSerializer(serializers.ModelSerializer):
             )
         price_type = attrs.get(
             "price_type",
-            self.instance.price_type if self.instance else Service.PriceType.FIXED,
+            self.instance.price_type if self.instance else Service.PriceType.STARTING_FROM,
         )
         price = attrs.get("price", self.instance.price if self.instance else None)
         maximum = attrs.get(
@@ -289,6 +342,56 @@ class ManagementServiceCreateSerializer(serializers.ModelSerializer):
             self.instance and (self.instance.image or self.instance.image_path)
         ):
             raise serializers.ValidationError({"image": "Upload a service image."})
+        customer_email_supplied = "result_photo_customer_email" in attrs
+        customer_email = attrs.pop("result_photo_customer_email", "").strip().lower()
+        customer = getattr(self.instance, "result_photo_customer", None)
+        if customer_email_supplied:
+            customer = User.objects.filter(
+                email__iexact=customer_email,
+                is_active=True,
+                is_staff=False,
+            ).first() if customer_email else None
+            if customer_email and customer is None:
+                raise serializers.ValidationError(
+                    {"result_photo_customer_email": "No active customer account uses this email address."}
+                )
+        before = attrs.get("before_image", getattr(self.instance, "before_image", None))
+        after = attrs.get("after_image", getattr(self.instance, "after_image", None))
+        consent_record = (
+            CustomerConsent.objects.filter(user=customer).first()
+            if customer else None
+        )
+        consent = bool(consent_record and consent_record.photograph_consent)
+        approved = attrs.get(
+            "result_images_approved",
+            getattr(self.instance, "result_images_approved", False),
+        )
+        reference = (
+            f"account-consent:{consent_record.id}:{consent_record.photograph_consent_updated_at.isoformat()}"
+            if consent_record and consent_record.photograph_consent_updated_at
+            else ""
+        )
+        if bool(before) != bool(after):
+            raise serializers.ValidationError(
+                {"before_image": "Upload both the before and after image as one result pair."}
+            )
+        if (before or after) and not customer:
+            raise serializers.ValidationError(
+                {"result_photo_customer_email": "Link the customer whose before-and-after images are being uploaded."}
+            )
+        if (before or after) and not consent:
+            raise serializers.ValidationError(
+                {"result_photo_customer_email": "This customer has not granted photograph advertising consent, or has withdrawn it."}
+            )
+        if approved and not (before and after):
+            raise serializers.ValidationError(
+                {"result_images_approved": "A complete consented image pair is required before approval."}
+            )
+        if approved and not consent:
+            attrs["result_images_approved"] = False
+        attrs["result_photo_customer"] = customer
+        attrs["result_photo_consent_confirmed"] = consent
+        attrs["result_photo_consent_reference"] = reference
         attrs["price_options_for_sync"] = normalized_options
         if price_type == Service.PriceType.OPTIONS:
             attrs["price"] = min(option["price"] for option in normalized_options)
@@ -383,6 +486,14 @@ class ManagementServiceDetailSerializer(serializers.ModelSerializer):
     image_path = serializers.SerializerMethodField()
     price_options = serializers.SerializerMethodField()
     publication_state = serializers.CharField(read_only=True)
+    before_image_url = serializers.SerializerMethodField()
+    after_image_url = serializers.SerializerMethodField()
+    result_photo_customer_email = serializers.EmailField(
+        source="result_photo_customer.email", read_only=True, default=""
+    )
+    result_photo_customer_name = serializers.CharField(
+        source="result_photo_customer.full_name", read_only=True, default=""
+    )
 
     class Meta:
         model = Service
@@ -394,6 +505,10 @@ class ManagementServiceDetailSerializer(serializers.ModelSerializer):
             "allows_pay_at_clinic", "is_consultation", "is_featured",
             "is_active", "is_published", "branch_ids", "created_at", "updated_at",
             "price_options", "publication_state",
+            "before_image_url", "after_image_url",
+            "result_photo_consent_confirmed", "result_photo_consent_reference",
+            "result_images_approved",
+            "result_photo_customer_email", "result_photo_customer_name",
         )
         read_only_fields = fields
 
@@ -412,6 +527,12 @@ class ManagementServiceDetailSerializer(serializers.ModelSerializer):
     def get_price_options(self, service):
         options = [option for option in service.price_options.all() if option.is_active]
         return ServicePriceOptionSerializer(options, many=True).data
+
+    def get_before_image_url(self, service):
+        return service.before_image.url if service.before_image else None
+
+    def get_after_image_url(self, service):
+        return service.after_image.url if service.after_image else None
 
 
 class ManagementServiceCategorySerializer(serializers.ModelSerializer):

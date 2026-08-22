@@ -111,6 +111,7 @@ export function ProductCreateForm({
               ))}
             </select>
           </div>
+          <div className="form-field"><label className="form-field__label" htmlFor="product-price-type">Customer pricing *</label><select className="form-field__control" id="product-price-type" name="price_type" defaultValue="fixed" required><option value="fixed">Show selling price</option><option value="contact">Contact for price via branch WhatsApp</option></select></div>
           <div className="form-field">
             <label className="form-field__label" htmlFor="product-state">
               Publication state *
@@ -162,7 +163,7 @@ export function ProductCreateForm({
           <FormField name="initial_sku" label="SKU" maxLength={80} required />
           <FormField name="initial_selling_price" label="Selling price (GHS)" type="number" min={0} step="0.01" required />
           <FormField name="initial_cost_price" label="Cost price (GHS)" type="number" min={0} step="0.01" required />
-          <FormField name="initial_estimated_availability_date" label="Estimated availability" type="date" hint="Optional; normally used for pre-orders." />
+          <FormField name="initial_estimated_availability_date" label="Estimated availability" type="date" hint="Required when pre-order is enabled." />
           <label className="management-form__toggle">
             <input type="checkbox" name="initial_is_preorder" />
             <span><strong>Allow pre-order</strong><small>Customers may add this variant before live stock is available.</small></span>

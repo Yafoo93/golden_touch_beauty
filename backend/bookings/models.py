@@ -26,6 +26,10 @@ def booking_intake_path(instance, filename):
 
 
 class Booking(BaseModel, BranchScopedModel, ActorTrackedModel):
+    class PricingStatus(models.TextChoices):
+        FINAL = "final", "Final price"
+        ESTIMATE = "estimate", "Starting-price estimate"
+
     class Status(models.TextChoices):
         PENDING = "pending", "Pending"
         CONFIRMED = "confirmed", "Confirmed"
@@ -74,6 +78,11 @@ class Booking(BaseModel, BranchScopedModel, ActorTrackedModel):
         decimal_places=2,
         default=Decimal("0.00"),
         validators=[MinValueValidator(Decimal("0.00"))],
+    )
+    pricing_status = models.CharField(
+        max_length=20,
+        choices=PricingStatus.choices,
+        default=PricingStatus.FINAL,
     )
     recipient_is_customer = models.BooleanField(default=True)
     recipient_name = models.CharField(max_length=200, blank=True)

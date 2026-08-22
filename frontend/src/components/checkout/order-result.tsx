@@ -44,6 +44,7 @@ export function OrderResult({ reference }: { reference: string }) {
     ? new Date(order.reservation_expires_at).toLocaleString()
     : "the reservation deadline shown in your account";
   const isPaid = order.payment_status === "paid" || Boolean(order.paid_at);
+  const preorderOnly = order.items.length > 0 && order.items.every((item) => item.is_preorder);
 
   return (
     <section className="order-result" aria-labelledby="order-confirmation-title">
@@ -55,7 +56,9 @@ export function OrderResult({ reference }: { reference: string }) {
       <p>
         {isPaid
           ? "Your payment has been verified and your order is being processed."
-          : `Your products are reserved until ${reservationDeadline}. Complete payment before then to keep the reservation.`}
+          : preorderOnly
+            ? "Your pre-order was received. Full payment is required before it is confirmed for future fulfillment."
+            : `Your in-stock products are reserved until ${reservationDeadline}. Complete payment before then to keep the reservation.`}
       </p>
 
       <div className="order-result__receipt">

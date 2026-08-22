@@ -8,6 +8,7 @@ import { useCartCount } from "@/components/cart/cart-count-context";
 import { ButtonLink } from "@/components/ui/button";
 import { useWishlist } from "@/components/wishlist/wishlist-context";
 import { formatGhanaCedis } from "@/lib/formatters";
+import { WhatsAppPriceEnquiry, type EnquiryBranch } from "./whatsapp-price-enquiry";
 
 export type ProductCardProps = {
   name: string;
@@ -21,6 +22,8 @@ export type ProductCardProps = {
   sku?: string;
   inStock: boolean;
   badge?: string;
+  priceType?: "fixed" | "contact";
+  contactBranches?: EnquiryBranch[];
 };
 
 export function ProductCard({
@@ -35,6 +38,8 @@ export function ProductCard({
   sku,
   inStock,
   badge,
+  priceType = "fixed",
+  contactBranches = [],
 }: ProductCardProps) {
   const detailsHref = `/shop/${slug}`;
   const { cartItems, addCartItem, removeCartItem } = useCartCount();
@@ -42,7 +47,7 @@ export function ProductCard({
   const [message, setMessage] = useState("");
   const [wishlistSaving, setWishlistSaving] = useState(false);
   const favorite = isFavorite(slug);
-  const canQuickAdd = Boolean(
+  const canQuickAdd = priceType !== "contact" && Boolean(
     variantId && sku && (inStock || badge === "Pre-order"),
   );
   const isInCart = Boolean(
@@ -138,7 +143,7 @@ export function ProductCard({
           </span>
         </div>
         <div className="catalogue-card__footer">
-          <p className="catalogue-card__price">{formatGhanaCedis(price)}</p>
+          <p className="catalogue-card__price">{priceType === "contact" ? "Contact for price" : formatGhanaCedis(price)}</p>
           <div className="product-card__actions">
             <ButtonLink
               href={detailsHref}
@@ -148,7 +153,7 @@ export function ProductCard({
             >
               View product
             </ButtonLink>
-            <button
+            {priceType === "contact" ? <WhatsAppPriceEnquiry compact itemType="product" itemName={name} sku={sku} branches={contactBranches} /> : <button
               type="button"
               className={
                 isInCart
@@ -179,7 +184,7 @@ export function ProductCard({
                 <circle cx="9" cy="20" r="1" />
                 <circle cx="18" cy="20" r="1" />
               </svg>
-            </button>
+            </button>}
             <button
               type="button"
               className={

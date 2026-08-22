@@ -8,6 +8,7 @@ export type CheckoutItem = {
   unit_price: string;
   quantity: number;
   line_total: string;
+  is_preorder: boolean;
 };
 
 export type CheckoutOptions = {

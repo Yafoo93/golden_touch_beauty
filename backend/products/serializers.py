@@ -19,6 +19,7 @@ class FeaturedProductSerializer(serializers.ModelSerializer):
     variant_id = serializers.SerializerMethodField()
     sku = serializers.SerializerMethodField()
     image_path = serializers.SerializerMethodField()
+    contact_branches = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -27,12 +28,14 @@ class FeaturedProductSerializer(serializers.ModelSerializer):
             "slug",
             "category",
             "description",
+            "price_type",
             "price",
             "image_path",
             "variant_label",
             "variant_id",
             "sku",
             "in_stock",
+            "contact_branches",
         )
 
     def _first_variant(self, product):
@@ -71,6 +74,22 @@ class FeaturedProductSerializer(serializers.ModelSerializer):
         if product.image:
             return product.image.url
         return product.image_path
+
+    def get_contact_branches(self, product):
+        seen = set()
+        result = []
+        for variant in product.variants.all():
+            for stock in variant.branch_inventory.all():
+                branch = stock.branch
+                if not stock.is_available or not branch.is_active or branch.id in seen:
+                    continue
+                seen.add(branch.id)
+                result.append({
+                    "code": branch.code,
+                    "name": branch.name,
+                    "whatsapp_number": branch.whatsapp_number or branch.secondary_whatsapp_number or branch.telephone_number,
+                })
+        return result
 
 
 class PublicProductSerializer(FeaturedProductSerializer):
@@ -149,11 +168,18 @@ class PublicProductVariantSerializer(serializers.Serializer):
         return "preorder" if variant.is_preorder else "out_of_stock"
 
     def get_available_at(self, variant):
+        live = self._live_stocks(variant)
+        if variant.is_preorder and not live:
+            live = [
+                stock for stock in variant.branch_inventory.all()
+                if stock.is_available and stock.branch.is_active
+            ]
         return [
             {
                 "branch_id": str(stock.branch_id),
                 "branch_code": stock.branch.code,
                 "branch_name": stock.branch.name,
+                "whatsapp_number": stock.branch.whatsapp_number or stock.branch.secondary_whatsapp_number or stock.branch.telephone_number,
             }
             for stock in self._live_stocks(variant)
         ]
@@ -175,6 +201,7 @@ class PublicProductDetailSerializer(serializers.ModelSerializer):
             "category",
             "category_slug",
             "description",
+            "price_type",
             "image_path",
             "images",
             "variants",
@@ -213,6 +240,7 @@ class ManagementProductListSerializer(serializers.ModelSerializer):
             "slug",
             "brand",
             "category",
+            "price_type",
             "image_path",
             "is_featured",
             "is_active",
@@ -411,6 +439,7 @@ class ManagementProductCreateSerializer(serializers.ModelSerializer):
             "brand",
             "category_id",
             "description",
+            "price_type",
             "image",
             "is_featured",
             "publication_state",
@@ -470,6 +499,10 @@ class ManagementProductCreateSerializer(serializers.ModelSerializer):
         state = attrs.pop("publication_state")
         attrs["is_active"] = state != "inactive"
         attrs["is_published"] = state == "published"
+        if attrs.get("price_type") == Product.PriceType.CONTACT:
+            attrs["initial_selling_price"] = 0
+        if attrs.get("initial_is_preorder") and not attrs.get("initial_estimated_availability_date"):
+            raise serializers.ValidationError({"initial_estimated_availability_date": "An estimated availability date is required for pre-orders."})
         return attrs
 
     def _unique_slug(self, name):
@@ -581,6 +614,7 @@ class ManagementProductDetailSerializer(serializers.ModelSerializer):
             "category_id",
             "category_name",
             "description",
+            "price_type",
             "image_path",
             "is_featured",
             "is_active",
@@ -629,6 +663,11 @@ class ProductVariantInputSerializer(serializers.Serializer):
     def validate_sku(self, value):
         return value.strip().upper()
 
+    def validate(self, attrs):
+        if attrs.get("is_preorder") and not attrs.get("estimated_availability_date"):
+            raise serializers.ValidationError({"estimated_availability_date": "Required for pre-order variants."})
+        return attrs
+
 
 class ManagementProductUpdateSerializer(serializers.ModelSerializer):
     category_id = serializers.PrimaryKeyRelatedField(
@@ -648,6 +687,7 @@ class ManagementProductUpdateSerializer(serializers.ModelSerializer):
             "brand",
             "category_id",
             "description",
+            "price_type",
             "image",
             "is_featured",
             "publication_state",

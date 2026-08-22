@@ -127,6 +127,7 @@ class OrderItem(BaseModel):
         default=Decimal("0.00"),
         validators=[MinValueValidator(Decimal("0.00"))],
     )
+    is_preorder = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["created_at"]

@@ -18,6 +18,7 @@ export type ManagementBooking = {
   proposed_start: string | null;
   proposed_expires_at: string | null;
   total_amount: string;
+  pricing_status: "final" | "estimate";
   total_duration_minutes: number;
   recipient_name: string;
   recipient_phone: string;

@@ -75,7 +75,7 @@ export default async function ManagementBookingDetailPage({
           </span>
         </div>
         <div className="management-page__summary">
-          <strong>{formatGhanaCedis(booking.total_amount)}</strong>
+          <strong>{booking.pricing_status === "estimate" ? `Starting estimate ${formatGhanaCedis(booking.total_amount)}` : formatGhanaCedis(booking.total_amount)}</strong>
           <span>{booking.payment_method} · {booking.payment_status}</span>
           {booking.finishes_after_branch_closing ? (
             <b>Warning: this appointment may finish after branch closing.</b>
@@ -112,7 +112,7 @@ export default async function ManagementBookingDetailPage({
           <p><strong>Notes:</strong> {booking.notes || "None supplied"}</p>
         </section> : null}
 
-        <BookingActions reference={booking.reference} />
+        <BookingActions reference={booking.reference} pricingStatus={booking.pricing_status} />
 
         <section>
           <h2>History</h2>
