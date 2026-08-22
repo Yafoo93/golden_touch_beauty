@@ -69,13 +69,13 @@ export function ServiceCreateForm({ categories, branches }: { categories: Servic
 
       <section className="management-form__section">
         <div className="management-form__section-heading"><h2>Image and branches</h2><p>Select where this service is initially available.</p></div>
-        <FormField name="image" label="Service image" type="file" accept="image/jpeg,image/png,image/webp" hint="JPEG, PNG, or WebP up to 8 MB." required />
+        <FormField name="image" label="Condition/service image" type="file" accept="image/jpeg,image/png,image/webp" hint="Required. This is the main image shown on the service card. JPEG, PNG, or WebP up to 8 MB." required />
         <div className="management-form__grid">
           <FormField name="before_image" label="Before image" type="file" accept="image/jpeg,image/png,image/webp" hint="Optional; upload only with explicit client consent." />
           <FormField name="after_image" label="After image" type="file" accept="image/jpeg,image/png,image/webp" hint="Must be supplied together with the before image." />
           <FormField name="result_photo_customer_email" label="Customer account email (optional)" type="email" maxLength={254} hint="Optional. It may be used to link the result images to an existing customer account." />
         </div>
-        <label className="management-form__toggle"><input type="checkbox" name="result_images_approved" /><span><strong>Approve pair for website</strong><small>Publishes the complete before-and-after pair on the service details page.</small></span></label>
+        <label className="management-form__toggle"><input type="checkbox" name="result_images_approved" /><span><strong>Show before/after pair on website</strong><small>Optional. This only has an effect when both result images have been uploaded.</small></span></label>
         <fieldset className="service-create-form__branches"><legend>Available branches *</legend>{branches.map((branch) => <label key={branch.id}><input type="checkbox" name="branch_ids" value={branch.id} /><span><strong>{branch.name}</strong><small>{branch.code}</small></span></label>)}</fieldset>
       </section>
 
