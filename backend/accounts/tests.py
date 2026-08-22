@@ -32,6 +32,7 @@ class RegistrationApiTests(TestCase):
             "confirm_password": "SafeCustomerPass!2026",
             "terms_privacy_agreed": True,
             "marketing_consent": False,
+            "photograph_consent": False,
         }
         data.update(overrides)
         return data
@@ -39,7 +40,7 @@ class RegistrationApiTests(TestCase):
     def test_registration_creates_customer_consent_and_session(self):
         response = self.client.post(
             reverse("accounts:register"),
-            self.payload(marketing_consent=True),
+            self.payload(marketing_consent=True, photograph_consent=True),
             content_type="application/json",
         )
 
@@ -51,6 +52,8 @@ class RegistrationApiTests(TestCase):
         self.assertNotEqual(user.password, "SafeCustomerPass!2026")
         self.assertEqual(str(self.client.session.get("_auth_user_id")), str(user.pk))
         self.assertTrue(user.customer_consent.marketing_consent)
+        self.assertTrue(user.customer_consent.photograph_consent)
+        self.assertIsNotNone(user.customer_consent.photograph_consent_updated_at)
         self.assertTrue(response.cookies.get("csrftoken"))
 
     def test_registration_accepts_common_international_phone_formatting(self):

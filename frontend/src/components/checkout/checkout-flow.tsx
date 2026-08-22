@@ -110,8 +110,8 @@ export function CheckoutFlow() {
       <p>Order summary</p><h2>{options.items.length} product {options.items.length === 1 ? "line" : "lines"}</h2>
       {options.items.map((item) => <article key={item.variant_id}><div className="checkout-flow__image">{item.image_path ? <Image src={item.image_path} alt="" fill sizes="4rem" /> : null}</div><div><strong>{item.product_name}</strong><span>{item.variant_name} · Qty {item.quantity}</span><small>{item.sku}</small></div><b>{formatGhanaCedis(item.line_total)}</b></article>)}
       <dl><div><dt>Subtotal</dt><dd>{formatGhanaCedis(options.subtotal)}</dd></div><div><dt>Delivery</dt><dd>{Number(options.delivery_fee) ? formatGhanaCedis(options.delivery_fee) : "Calculated/confirmed later"}</dd></div><div><dt>Total now</dt><dd>{formatGhanaCedis(options.total_amount)}</dd></div></dl>
-      <p className="checkout-flow__reservation">Stock will be reserved for {options.reservation_minutes} minutes after submission.</p>
-      <Button fullWidth size="large" loading={submitting} loadingLabel="Reserving stock once…" disabled={!valid} onClick={() => void submit()}>Reserve order and continue</Button>
+      <p className="checkout-flow__reservation">{options.reservation_minutes ? `In-stock items will be reserved for ${options.reservation_minutes} minutes after submission.` : "Pre-order items require full payment and will be fulfilled after the stated availability date."}</p>
+      <Button fullWidth size="large" loading={submitting} loadingLabel="Creating order…" disabled={!valid} onClick={() => void submit()}>Create order and continue</Button>
       <small>By continuing, you accept the delivery, returns, privacy, and terms policies.</small>
     </aside>
   </div>;

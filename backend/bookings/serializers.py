@@ -76,7 +76,7 @@ class BookingSerializer(serializers.ModelSerializer):
             "id", "reference", "branch_code", "branch_name", "customer_name",
             "customer_email", "status", "source", "preferred_start",
             "proposed_start", "proposed_expires_at", "total_duration_minutes",
-            "total_amount", "recipient_is_customer", "recipient_name",
+            "total_amount", "pricing_status", "recipient_is_customer", "recipient_name",
             "recipient_phone", "allergies", "conditions", "previous_treatments",
             "notes", "photo_marketing_consent", "payment_method",
             "payment_status", "finishes_after_branch_closing", "services",
@@ -198,6 +198,10 @@ class BookingCreateSerializer(serializers.Serializer):
         resolved = []
         for selection in attrs["service_selections"]:
             service = services[str(selection["service_id"])]
+            if service.price_type == Service.PriceType.QUOTATION:
+                raise serializers.ValidationError({
+                    "service_selections": f"Contact the selected branch for a price for {service.name}."
+                })
             option = None
             if selection.get("price_option_id"):
                 option = ServicePriceOption.objects.filter(
@@ -293,6 +297,17 @@ class BookingCreateSerializer(serializers.Serializer):
             customer=customer,
             total_amount=total,
             total_duration_minutes=duration,
+            pricing_status=(
+                Booking.PricingStatus.ESTIMATE
+                if any(
+                    service.price_type in {
+                        Service.PriceType.STARTING_FROM,
+                        Service.PriceType.RANGE,
+                    }
+                    for service, _, _, _ in resolved
+                )
+                else Booking.PricingStatus.FINAL
+            ),
             created_by=actor,
             updated_by=actor,
             **validated_data,
@@ -318,7 +333,8 @@ class BookingCreateSerializer(serializers.Serializer):
             actor=actor,
             metadata={"source": booking.source},
         )
-        issue_invoice_for_source(booking)
+        if booking.pricing_status == Booking.PricingStatus.FINAL:
+            issue_invoice_for_source(booking)
         return booking
 
 
@@ -326,11 +342,14 @@ class BookingActionSerializer(serializers.Serializer):
     action = serializers.ChoiceField(
         choices=(
             "confirm", "reject", "cancel", "check_in", "start", "complete",
-            "no_show", "propose_time",
+            "no_show", "propose_time", "confirm_price",
         )
     )
     reason = serializers.CharField(required=False, allow_blank=True)
     proposed_start = serializers.DateTimeField(required=False)
+    final_amount = serializers.DecimalField(
+        max_digits=12, decimal_places=2, min_value=0, required=False
+    )
 
     def validate(self, attrs):
         action = attrs["action"]
@@ -340,6 +359,8 @@ class BookingActionSerializer(serializers.Serializer):
             proposed = attrs.get("proposed_start")
             if not proposed or proposed <= timezone.now():
                 raise serializers.ValidationError({"proposed_start": "Choose a future proposed time."})
+        if action == "confirm_price" and attrs.get("final_amount") is None:
+            raise serializers.ValidationError({"final_amount": "Enter the confirmed final price."})
         return attrs
 
 

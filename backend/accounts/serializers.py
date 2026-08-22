@@ -26,6 +26,7 @@ class RegistrationSerializer(serializers.Serializer):
     confirm_password = serializers.CharField(write_only=True, trim_whitespace=False)
     terms_privacy_agreed = serializers.BooleanField(write_only=True)
     marketing_consent = serializers.BooleanField(default=False, required=False)
+    photograph_consent = serializers.BooleanField(default=False, required=False)
 
     def validate_full_name(self, value):
         normalized = " ".join(value.split())
@@ -72,6 +73,7 @@ class RegistrationSerializer(serializers.Serializer):
         validated_data.pop("confirm_password")
         validated_data.pop("terms_privacy_agreed")
         marketing_consent = validated_data.pop("marketing_consent", False)
+        photograph_consent = validated_data.pop("photograph_consent", False)
         user = User.objects.create_user(password=password, **validated_data)
         now = timezone.now()
         CustomerConsent.objects.create(
@@ -81,6 +83,8 @@ class RegistrationSerializer(serializers.Serializer):
             terms_privacy_accepted_at=now,
             marketing_consent=marketing_consent,
             marketing_consent_updated_at=now,
+            photograph_consent=photograph_consent,
+            photograph_consent_updated_at=now,
         )
         return user
 

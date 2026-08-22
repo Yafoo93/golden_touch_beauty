@@ -41,7 +41,7 @@ class FeaturedServiceListView(generics.ListAPIView):
     def get_queryset(self):
         availability = public_availability()
         return (
-            Service.objects.select_related("category")
+            Service.objects.select_related("category", "result_photo_customer")
             .filter(
                 is_featured=True,
                 is_active=True,
@@ -65,7 +65,7 @@ class PublicServiceListView(generics.ListAPIView):
 
     def get_queryset(self):
         queryset = (
-            Service.objects.select_related("category")
+            Service.objects.select_related("category", "result_photo_customer")
             .filter(
                 is_active=True,
                 is_published=True,
@@ -125,7 +125,7 @@ class PublicServiceDetailView(generics.RetrieveAPIView):
 
     def get_queryset(self):
         return (
-            Service.objects.select_related("category")
+            Service.objects.select_related("category", "result_photo_customer")
             .filter(
                 is_active=True,
                 is_published=True,
@@ -155,7 +155,7 @@ class ManagementServiceListView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         return (
-            Service.objects.select_related("category")
+            Service.objects.select_related("category", "result_photo_customer")
             .prefetch_related(
                 Prefetch(
                     "branch_availability",
@@ -219,7 +219,7 @@ class ManagementServiceDetailView(generics.RetrieveUpdateAPIView):
         return ManagementServiceDetailSerializer
 
     def get_queryset(self):
-        return Service.objects.select_related("category").prefetch_related(
+        return Service.objects.select_related("category", "result_photo_customer").prefetch_related(
             Prefetch(
                 "branch_availability",
                 queryset=ServiceBranchAvailability.objects.select_related("branch"),

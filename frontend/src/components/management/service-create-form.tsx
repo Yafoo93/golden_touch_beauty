@@ -18,7 +18,7 @@ function messagesFrom(error: unknown) {
   );
 }
 
-const BOOLEAN_FIELDS = ["is_clinic_service", "is_home_service", "requires_full_payment", "allows_pay_at_clinic", "is_consultation", "is_featured"] as const;
+const BOOLEAN_FIELDS = ["is_clinic_service", "is_home_service", "requires_full_payment", "allows_pay_at_clinic", "is_consultation", "is_featured", "result_images_approved"] as const;
 
 export function ServiceCreateForm({ categories, branches }: { categories: ServiceCategoryOption[]; branches: ServiceBranchOption[] }) {
   const router = useRouter();
@@ -58,7 +58,7 @@ export function ServiceCreateForm({ categories, branches }: { categories: Servic
       <section className="management-form__section">
         <div className="management-form__section-heading"><h2>Pricing and duration</h2><p>Choose the pricing model customers should see. Placeholder values can be revised later.</p></div>
         <div className="management-form__grid">
-          <div className="form-field"><label className="form-field__label" htmlFor="service-price-type">Price type *</label><select className="form-field__control" id="service-price-type" name="price_type" defaultValue="fixed" required><option value="fixed">Fixed price</option><option value="starting_from">Starting from</option><option value="range">Price range</option><option value="options">Price options</option><option value="quotation">Manual quotation</option></select></div>
+          <div className="form-field"><label className="form-field__label" htmlFor="service-price-type">Price type *</label><select className="form-field__control" id="service-price-type" name="price_type" defaultValue="starting_from" required><option value="fixed">Fixed price</option><option value="starting_from">Starting from</option><option value="range">Price range</option><option value="options">Price options</option><option value="quotation">Contact for price</option></select></div>
           <FormField name="price" label="Price / starting price (GHS)" type="number" min={0} step="0.01" required />
           <FormField name="maximum_price" label="Maximum price (GHS)" type="number" min={0} step="0.01" hint="Required only for Price range." />
           <FormField name="duration_minutes" label="Duration in minutes" type="number" min={1} max={1440} defaultValue={60} required />
@@ -70,6 +70,12 @@ export function ServiceCreateForm({ categories, branches }: { categories: Servic
       <section className="management-form__section">
         <div className="management-form__section-heading"><h2>Image and branches</h2><p>Select where this service is initially available.</p></div>
         <FormField name="image" label="Service image" type="file" accept="image/jpeg,image/png,image/webp" hint="JPEG, PNG, or WebP up to 8 MB." required />
+        <div className="management-form__grid">
+          <FormField name="before_image" label="Before image" type="file" accept="image/jpeg,image/png,image/webp" hint="Optional; upload only with explicit client consent." />
+          <FormField name="after_image" label="After image" type="file" accept="image/jpeg,image/png,image/webp" hint="Must be supplied together with the before image." />
+          <FormField name="result_photo_customer_email" label="Customer account email" type="email" maxLength={254} hint="The account must have active photograph-advertising consent." />
+        </div>
+        <label className="management-form__toggle"><input type="checkbox" name="result_images_approved" /><span><strong>Approve pair for website</strong><small>Both images were reviewed and contain no unintended sensitive information.</small></span></label>
         <fieldset className="service-create-form__branches"><legend>Available branches *</legend>{branches.map((branch) => <label key={branch.id}><input type="checkbox" name="branch_ids" value={branch.id} /><span><strong>{branch.name}</strong><small>{branch.code}</small></span></label>)}</fieldset>
       </section>
 

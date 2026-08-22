@@ -6,12 +6,13 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { apiFetch, ensureCsrfCookie } from "@/lib/api";
 
-export function BookingActions({ reference }: { reference: string }) {
+export function BookingActions({ reference, pricingStatus }: { reference: string; pricingStatus: "final" | "estimate" }) {
   const router = useRouter();
   const [reason, setReason] = useState("");
   const [proposedStart, setProposedStart] = useState("");
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
+  const [finalAmount, setFinalAmount] = useState("");
 
   async function act(action: string) {
     setBusy(action);
@@ -25,6 +26,7 @@ export function BookingActions({ reference }: { reference: string }) {
           action,
           reason,
           proposed_start: proposedStart ? new Date(proposedStart).toISOString() : undefined,
+          final_amount: action === "confirm_price" ? finalAmount : undefined,
         }),
       });
       setMessage("Booking updated successfully.");
@@ -41,7 +43,9 @@ export function BookingActions({ reference }: { reference: string }) {
       <h2>Booking actions</h2>
       <label>Reason / internal note<textarea value={reason} onChange={(event) => setReason(event.target.value)} /></label>
       <label>Alternative date and time<input type="datetime-local" value={proposedStart} onChange={(event) => setProposedStart(event.target.value)} /></label>
+      {pricingStatus === "estimate" ? <label>Confirmed final price (GHS)<input type="number" min="0" step="0.01" value={finalAmount} onChange={(event) => setFinalAmount(event.target.value)} /></label> : null}
       <div>
+        {pricingStatus === "estimate" ? <Button size="small" disabled={!finalAmount || Boolean(busy)} onClick={() => void act("confirm_price")}>Confirm final price</Button> : null}
         <Button size="small" disabled={Boolean(busy)} onClick={() => void act("confirm")}>Approve</Button>
         <Button size="small" variant="outline" disabled={!proposedStart || Boolean(busy)} onClick={() => void act("propose_time")}>Propose time</Button>
         <Button size="small" variant="outline" disabled={Boolean(busy)} onClick={() => void act("check_in")}>Check in</Button>

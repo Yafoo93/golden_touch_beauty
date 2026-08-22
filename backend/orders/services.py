@@ -201,7 +201,10 @@ def capture_order_stock(order, *, actor=None):
         .filter(order=order, status=StockReservation.Status.ACTIVE)
         .order_by("inventory_id")
     )
-    if not reservations or any(item.expires_at <= timezone.now() for item in reservations):
+    has_regular_items = order.items.filter(is_preorder=False).exists()
+    if (has_regular_items and not reservations) or any(
+        item.expires_at <= timezone.now() for item in reservations
+    ):
         raise ValueError("The order's stock reservation has expired.")
     now = timezone.now()
     for reservation in reservations:

@@ -57,6 +57,13 @@ def validate_cart_lines(lines):
     found_ids = set()
     for variant in variants:
         found_ids.add(variant.id)
+        if variant.product.price_type == Product.PriceType.CONTACT:
+            adjustments.append({
+                "variant_id": str(variant.id),
+                "code": "contact_for_price",
+                "message": f"{variant.product.name} requires a price enquiry and cannot be added to cart.",
+            })
+            continue
         requested_quantity = requested[variant.id]
         maximum_stock = max(
             (stock.quantity_available for stock in variant.branch_inventory.all()),

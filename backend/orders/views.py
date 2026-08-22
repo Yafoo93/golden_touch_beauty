@@ -76,15 +76,21 @@ def eligible_branch_rows(items):
         )
     }
     eligible = []
+    variants = {item.variant_id: item.variant for item in items}
     for branch in branches:
         if all(
-            (row := rows.get((branch.id, variant_id)))
-            and (
-                row.quantity_on_hand
-                - row.quantity_reserved
-                + expired_by_inventory.get(row.id, 0)
+            (
+                variants[variant_id].is_preorder
+                and rows.get((branch.id, variant_id)) is not None
             )
-            >= quantity
+            or (
+                (row := rows.get((branch.id, variant_id)))
+                and (
+                    row.quantity_on_hand
+                    - row.quantity_reserved
+                    + expired_by_inventory.get(row.id, 0)
+                ) >= quantity
+            )
             for variant_id, quantity in requested.items()
         ):
             eligible.append(branch)
@@ -122,6 +128,7 @@ class CheckoutOptionsView(APIView):
                         "unit_price": item.variant.selling_price,
                         "quantity": item.quantity,
                         "line_total": item.variant.selling_price * item.quantity,
+                        "is_preorder": item.variant.is_preorder,
                     }
                     for item in items
                 ],
@@ -133,7 +140,7 @@ class CheckoutOptionsView(APIView):
                     for branch in branches
                 ],
                 "delivery_available": bool(branches),
-                "reservation_minutes": 30,
+                "reservation_minutes": 30 if any(not item.variant.is_preorder for item in items) else 0,
             }
         )
 
@@ -201,7 +208,10 @@ class CheckoutCreateView(APIView):
         }
         for item in items:
             inventory = inventory_by_variant.get(item.variant_id)
-            if not inventory or inventory.quantity_available < item.quantity:
+            if not inventory or (
+                not item.variant.is_preorder
+                and inventory.quantity_available < item.quantity
+            ):
                 return Response(
                     {
                         "detail": (
@@ -212,7 +222,10 @@ class CheckoutCreateView(APIView):
                     status=status.HTTP_409_CONFLICT,
                 )
 
-        expires_at = timezone.now() + timedelta(minutes=30)
+        has_regular_items = any(not item.variant.is_preorder for item in items)
+        expires_at = (
+            timezone.now() + timedelta(minutes=30) if has_regular_items else None
+        )
         subtotal = sum(
             (item.variant.selling_price * item.quantity for item in items),
             Decimal("0.00"),
@@ -251,7 +264,10 @@ class CheckoutCreateView(APIView):
                 quantity=cart_item.quantity,
                 line_total=line_total,
                 line_cost=variant.cost_price * cart_item.quantity,
+                is_preorder=variant.is_preorder,
             )
+            if variant.is_preorder:
+                continue
             inventory = inventory_by_variant[variant.id]
             inventory.quantity_reserved += cart_item.quantity
             inventory.save(update_fields=["quantity_reserved", "updated_at"])

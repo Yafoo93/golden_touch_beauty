@@ -19,6 +19,7 @@ from branches.permissions import (
     can_access_branch,
 )
 from notifications.jobs import enqueue_email_job
+from payments.services import issue_invoice_for_source
 from core.throttling import UnsafeMethodScopedRateThrottle
 
 from .models import Booking, BookingBlock, BookingHistory
@@ -339,6 +340,7 @@ class ManagementBookingActionView(APIView):
         "complete": Booking.Status.COMPLETED,
         "no_show": Booking.Status.NO_SHOW,
         "propose_time": Booking.Status.PROPOSED,
+        "confirm_price": Booking.Status.PENDING,
     }
     allowed_from = {
         "confirm": {Booking.Status.PENDING},
@@ -358,6 +360,7 @@ class ManagementBookingActionView(APIView):
             Booking.Status.CONFIRMED,
             Booking.Status.RESCHEDULED,
         },
+        "confirm_price": {Booking.Status.PENDING, Booking.Status.PROPOSED},
     }
 
     @transaction.atomic
@@ -383,10 +386,17 @@ class ManagementBookingActionView(APIView):
             )
         booking.status = self.transitions[action]
         booking.updated_by = request.user
+        if action == "confirm_price":
+            if booking.pricing_status != Booking.PricingStatus.ESTIMATE:
+                return Response({"detail": "This booking already has a final price."}, status=400)
+            booking.total_amount = serializer.validated_data["final_amount"]
+            booking.pricing_status = Booking.PricingStatus.FINAL
         if action == "propose_time":
             booking.proposed_start = serializer.validated_data["proposed_start"]
             booking.proposed_expires_at = timezone.now() + timedelta(days=2)
         booking.save()
+        if action == "confirm_price":
+            issue_invoice_for_source(booking)
         BookingHistory.objects.create(
             booking=booking,
             action=action,

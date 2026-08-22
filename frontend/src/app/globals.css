@@ -6230,3 +6230,29 @@ textarea.form-field__control { min-height: 7rem; }
     display: grid;
   }
 }
+.catalogue-card__result-badge {
+  position: absolute;
+  left: 0.75rem;
+  bottom: 0.75rem;
+  border: 1px solid rgba(236, 196, 84, 0.65);
+  border-radius: 999px;
+  background: rgba(8, 8, 8, 0.88);
+  color: #ecc454;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.service-result-pair { padding: clamp(3rem, 7vw, 6rem) max(1.25rem, calc((100vw - 84rem) / 2)); }
+.service-result-pair > header { max-width: 46rem; margin-bottom: 2rem; }
+.service-result-pair > header > p { color: #ecc454; text-transform: uppercase; letter-spacing: .16em; font-weight: 700; }
+.service-result-pair > header > h2 { font-family: Georgia, serif; font-size: clamp(2rem, 4vw, 3.5rem); margin: .35rem 0; }
+.service-result-pair > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.service-result-pair figure { margin: 0; border: 1px solid rgba(236, 196, 84, .25); background: #121212; }
+.service-result-pair figure > div { position: relative; aspect-ratio: 4 / 3; }
+.service-result-pair figure img { width: 100%; height: 100%; object-fit: cover; }
+.service-result-pair figcaption { padding: .8rem 1rem; color: #ecc454; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; }
+.price-enquiry { display: flex; gap: .65rem; align-items: center; flex-wrap: wrap; }
+.price-enquiry select { min-height: 2.7rem; border: 1px solid rgba(236, 196, 84, .45); background: #101010; color: #fff; padding: 0 .7rem; border-radius: .35rem; }
+.price-enquiry--compact { display: inline-flex; }
+@media (max-width: 42rem) { .service-result-pair > div { grid-template-columns: 1fr; } }

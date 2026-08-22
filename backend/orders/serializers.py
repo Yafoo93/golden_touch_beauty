@@ -13,7 +13,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
         model = OrderItem
         fields = (
             "id", "product_name", "product_slug", "variant_name", "sku",
-            "image_path", "unit_price", "quantity", "line_total",
+            "image_path", "unit_price", "quantity", "line_total", "is_preorder",
         )
 
 

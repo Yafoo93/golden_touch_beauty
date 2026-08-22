@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { ButtonLink } from "@/components/ui/button";
 import { formatGhanaCedis } from "@/lib/formatters";
+import { WhatsAppPriceEnquiry, type EnquiryBranch } from "./whatsapp-price-enquiry";
 
 export type ServiceCardProps = {
   id?: string;
@@ -23,6 +24,8 @@ export type ServiceCardProps = {
     price: string;
     duration_minutes: number | null;
   }[];
+  hasResultImages?: boolean;
+  enquiryBranches?: EnquiryBranch[];
 };
 
 export function ServiceCard({
@@ -35,6 +38,9 @@ export function ServiceCard({
   imageSrc,
   availableAt,
   badge,
+  priceType,
+  hasResultImages,
+  enquiryBranches = [],
 }: ServiceCardProps) {
   const detailsHref = `/services/${slug}`;
 
@@ -52,7 +58,8 @@ export function ServiceCard({
           sizes="(max-width: 48rem) 100vw, (max-width: 75rem) 50vw, 33vw"
           className="catalogue-card__image"
         />
-        {badge ? <span className="catalogue-card__badge">{badge}</span> : null}
+          {badge ? <span className="catalogue-card__badge">{badge}</span> : null}
+          {hasResultImages ? <span className="catalogue-card__result-badge">Before &amp; after available</span> : null}
       </Link>
       <div className="catalogue-card__body">
         <p className="catalogue-card__category">{category}</p>
@@ -71,14 +78,16 @@ export function ServiceCard({
           </div>
         </dl>
         <div className="catalogue-card__footer">
-          <p className="catalogue-card__price">{formatGhanaCedis(price)}</p>
-          <ButtonLink
-            href={`/book?service=${encodeURIComponent(slug)}`}
+          <p className="catalogue-card__price">
+            {priceType === "quotation" ? "Contact for price" : priceType === "starting_from" ? `Starting from ${formatGhanaCedis(price)}` : formatGhanaCedis(price)}
+          </p>
+          {priceType === "quotation" ? <WhatsAppPriceEnquiry compact itemType="service" itemName={name} branches={enquiryBranches} /> : <ButtonLink
+            href={detailsHref}
             size="small"
             aria-label={`Book ${name}`}
           >
-            Book service
-          </ButtonLink>
+            View service
+          </ButtonLink>}
         </div>
       </div>
     </article>

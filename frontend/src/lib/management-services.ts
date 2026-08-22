@@ -26,6 +26,13 @@ export type ManagementService = {
   pricing_notes: string;
   duration_minutes: number;
   image_path: string;
+  before_image_url: string | null;
+  after_image_url: string | null;
+  result_photo_consent_confirmed: boolean;
+  result_photo_consent_reference: string;
+  result_images_approved: boolean;
+  result_photo_customer_email: string;
+  result_photo_customer_name: string;
   is_featured: boolean;
   is_active: boolean;
   is_published: boolean;

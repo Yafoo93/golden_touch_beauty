@@ -21,13 +21,20 @@ def send_order_confirmation_email(order) -> bool:
     if not order.customer_id:
         return False
 
+    preorder_only = order.items.exists() and not order.items.filter(
+        is_preorder=False
+    ).exists()
     create_notification(
         recipient=order.customer,
         category=Notification.Category.ORDER,
         title="Order received",
         message=(
-            f"Your order {order.reference} was received. Complete payment "
-            "before the stock reservation expires."
+            f"Your order {order.reference} was received. "
+            + (
+                "Complete full payment to confirm your pre-order."
+                if preorder_only
+                else "Complete payment before the stock reservation expires."
+            )
         ),
         action_url=f"/account/orders/{order.reference}",
         event_key=f"order:{order.pk}:created",
@@ -76,7 +83,11 @@ def send_order_confirmation_email(order) -> bool:
             f"Total: {_money(order.total_amount)}",
             f"Payment status: {order.payment_status.replace('_', ' ').title()}",
             "",
-            f"Your stock is reserved until {reservation_deadline}.",
+            (
+                "Your pre-order requires full payment before confirmation."
+                if preorder_only
+                else f"Your stock is reserved until {reservation_deadline}."
+            ),
             (
                 "This is an order confirmation, not a payment receipt. "
                 "The order is only paid after payment has been verified."
@@ -104,7 +115,7 @@ def send_order_confirmation_email(order) -> bool:
         <p style="color:#dfa824;letter-spacing:.12em;text-transform:uppercase">Golden Touch Beauty Centre</p>
         <h1 style="font-family:Georgia,serif">Order received</h1>
         <p>Hello {escape(order.customer.full_name)},</p>
-        <p>We received your product order and temporarily reserved its stock.</p>
+        <p>{"We received your pre-order. Full payment is required before confirmation." if preorder_only else "We received your product order and temporarily reserved its stock."}</p>
         <table style="width:100%;color:#f5f1e8;border-collapse:collapse">
           <tr><td style="padding:8px 0">Reference</td><td style="text-align:right;color:#ecc454">{escape(order.reference)}</td></tr>
           <tr><td style="padding:8px 0">Fulfillment</td><td style="text-align:right">{escape(fulfillment)}</td></tr>
@@ -113,7 +124,7 @@ def send_order_confirmation_email(order) -> bool:
           <tr><td style="padding:8px 0">Delivery fee</td><td style="text-align:right">{escape(_money(order.delivery_fee))}</td></tr>
           <tr><td style="padding:12px 0;font-weight:bold">Total</td><td style="padding:12px 0;text-align:right;color:#ecc454;font-weight:bold">{escape(_money(order.total_amount))}</td></tr>
         </table>
-        <p>Your stock is reserved until {escape(reservation_deadline)}.</p>
+        <p>{"Your pre-order will be fulfilled after its stated estimated availability date." if preorder_only else f"Your stock is reserved until {escape(reservation_deadline)}."}</p>
         <p style="margin-top:28px">
           <a href="{escape(confirmation_url)}" style="display:inline-block;background:#dfa824;color:#080808;padding:14px 20px;text-decoration:none;font-weight:bold">View order confirmation</a>
         </p>

@@ -10,7 +10,7 @@ import type { ManagementServiceDetail } from "@/lib/management-services";
 import type { ServiceBranchOption, ServiceCategoryOption } from "./service-create-form";
 import { ServicePriceOptionsEditor } from "./service-price-options-editor";
 
-const BOOLEANS = ["is_clinic_service", "is_home_service", "requires_full_payment", "allows_pay_at_clinic", "is_consultation", "is_featured"] as const;
+const BOOLEANS = ["is_clinic_service", "is_home_service", "requires_full_payment", "allows_pay_at_clinic", "is_consultation", "is_featured", "result_images_approved"] as const;
 function errorsFrom(error: unknown) {
   if (!(error instanceof ApiError)) return ["The service could not be updated."];
   if (!error.details || typeof error.details !== "object") return [error.message];
@@ -30,6 +30,10 @@ export function ServiceEditForm({ service, categories, branches }: { service: Ma
     if (!body.get("maximum_price")) body.delete("maximum_price");
     const image = body.get("image");
     if (!(image instanceof File) || image.size === 0) body.delete("image");
+    for (const field of ["before_image", "after_image"]) {
+      const file = body.get(field);
+      if (!(file instanceof File) || file.size === 0) body.delete(field);
+    }
     try {
       await apiFetch(`services/management/${service.id}/`, { method: "PATCH", body });
       router.push("/management/services");
@@ -66,6 +70,12 @@ export function ServiceEditForm({ service, categories, branches }: { service: Ma
         <div className="management-form__section-heading"><h2>Image and branch availability</h2><p>Leave the file empty to keep the current image.</p></div>
         <div className="service-edit-form__image"><Image src={service.image_path || "/images/hero1.jpeg"} alt="" fill sizes="20rem" /></div>
         <FormField name="image" label="Replace service image" type="file" accept="image/jpeg,image/png,image/webp" hint="Optional. JPEG, PNG, or WebP up to 8 MB." />
+        <div className="management-form__grid">
+          <FormField name="before_image" label="Replace before image" type="file" accept="image/jpeg,image/png,image/webp" />
+          <FormField name="after_image" label="Replace after image" type="file" accept="image/jpeg,image/png,image/webp" />
+          <FormField name="result_photo_customer_email" label="Customer account email" type="email" defaultValue={service.result_photo_customer_email} maxLength={254} hint="Publication follows this customer's live photograph-consent preference." />
+        </div>
+        <label className="management-form__toggle"><input type="checkbox" name="result_images_approved" defaultChecked={service.result_images_approved} /><span><strong>Approved for website</strong><small>Only approved pairs are returned by the public API.</small></span></label>
         <fieldset className="service-create-form__branches"><legend>Available branches *</legend>{branches.map((branch) => <label key={branch.id}><input type="checkbox" name="branch_ids" value={branch.id} defaultChecked={service.branch_ids.includes(branch.id)} /><span><strong>{branch.name}</strong><small>{branch.code}</small></span></label>)}</fieldset>
       </section>
       <section className="management-form__section">

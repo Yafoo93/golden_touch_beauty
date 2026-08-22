@@ -4,7 +4,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from core.models import BaseModel
-from core.storage import public_media_storage
+from core.storage import private_media_storage, public_media_storage
 
 
 class ServiceCategory(BaseModel):
@@ -47,7 +47,7 @@ class Service(BaseModel):
     price_type = models.CharField(
         max_length=30,
         choices=PriceType.choices,
-        default=PriceType.FIXED,
+        default=PriceType.STARTING_FROM,
     )
     price = models.DecimalField(
         max_digits=12,
@@ -71,6 +71,26 @@ class Service(BaseModel):
         blank=True,
     )
     image_path = models.CharField(max_length=255, blank=True)
+    before_image = models.ImageField(
+        upload_to="services/results/%Y/%m/",
+        storage=private_media_storage,
+        blank=True,
+    )
+    after_image = models.ImageField(
+        upload_to="services/results/%Y/%m/",
+        storage=private_media_storage,
+        blank=True,
+    )
+    result_photo_consent_confirmed = models.BooleanField(default=False)
+    result_photo_consent_reference = models.CharField(max_length=120, blank=True)
+    result_photo_customer = models.ForeignKey(
+        "accounts.User",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="published_service_results",
+    )
+    result_images_approved = models.BooleanField(default=False)
     is_clinic_service = models.BooleanField(default=True)
     is_home_service = models.BooleanField(default=False)
     requires_full_payment = models.BooleanField(default=True)

@@ -20,6 +20,7 @@ const EMPTY_DRAFT: RegistrationDraft = {
   phone_number: "",
   terms_privacy_agreed: false,
   marketing_consent: false,
+  photograph_consent: false,
 };
 
 function apiValidation(error: ApiError) {
@@ -95,6 +96,7 @@ export function RegisterForm() {
           password: value("password"), confirm_password: value("confirm_password"),
           terms_privacy_agreed: form.get("terms_privacy_agreed") === "on",
           marketing_consent: form.get("marketing_consent") === "on",
+          photograph_consent: form.get("photograph_consent") === "on",
         }),
       });
       try {
@@ -130,6 +132,10 @@ export function RegisterForm() {
         <label className="consent-field">
           <input type="checkbox" name="terms_privacy_agreed" checked={draft.terms_privacy_agreed} onChange={updateConsent} required />
           <span>I agree to the <Link href="/terms" target="_blank">Terms and Conditions</Link> and <Link href="/privacy" target="_blank">Privacy Policy</Link>. <strong aria-hidden="true">*</strong></span>
+        </label>
+        <label className="consent-field">
+          <input type="checkbox" name="photograph_consent" checked={draft.photograph_consent} onChange={updateConsent} />
+          <span>I consent to approved photographs or videos taken during my services—including before-and-after images—being used on the Golden Touch website, social media, portfolio, and advertising. I can withdraw this consent later from my account.</span>
         </label>
         {fieldErrors.terms_privacy_agreed ? <ValidationMessage>{fieldErrors.terms_privacy_agreed}</ValidationMessage> : null}
         <label className="consent-field">

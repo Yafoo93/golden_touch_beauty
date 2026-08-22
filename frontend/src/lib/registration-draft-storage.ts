@@ -4,6 +4,7 @@ export type RegistrationDraft = {
   phone_number: string;
   terms_privacy_agreed: boolean;
   marketing_consent: boolean;
+  photograph_consent: boolean;
 };
 
 const DRAFT_KEY = "golden-touch-registration-draft";
@@ -18,6 +19,7 @@ export function readRegistrationDraft(): Partial<RegistrationDraft> {
     phone_number: typeof parsed.phone_number === "string" ? parsed.phone_number : "",
     terms_privacy_agreed: parsed.terms_privacy_agreed === true,
     marketing_consent: parsed.marketing_consent === true,
+    photograph_consent: parsed.photograph_consent === true,
   };
 }
 
@@ -28,6 +30,7 @@ export function writeRegistrationDraft(draft: RegistrationDraft) {
     phone_number: draft.phone_number,
     terms_privacy_agreed: draft.terms_privacy_agreed,
     marketing_consent: draft.marketing_consent,
+    photograph_consent: draft.photograph_consent,
   }));
 }
 

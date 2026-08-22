@@ -174,6 +174,7 @@ export function ProductEditForm({
               {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
             </select>
           </div>
+          <div className="form-field"><label className="form-field__label" htmlFor="edit-product-price-type">Customer pricing *</label><select className="form-field__control" id="edit-product-price-type" name="price_type" defaultValue={product.price_type} required><option value="fixed">Show selling price</option><option value="contact">Contact for price via branch WhatsApp</option></select></div>
           <div className="form-field">
             <label className="form-field__label" htmlFor="edit-product-state">Publication state *</label>
             <select className="form-field__control" id="edit-product-state" name="publication_state" defaultValue={product.publication_state} required>

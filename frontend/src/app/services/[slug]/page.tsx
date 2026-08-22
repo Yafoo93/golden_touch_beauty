@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { ButtonLink } from "@/components/ui/button";
 import { ServiceCard } from "@/components/catalogue/service-card";
+import { WhatsAppPriceEnquiry } from "@/components/catalogue/whatsapp-price-enquiry";
 import {
   formatBranchTime,
   formatOpeningDays,
@@ -105,18 +106,28 @@ export default async function ServiceDetailPage({
             </p>
           ) : null}
           <div className="service-detail-hero__actions">
-            <ButtonLink
+            {service.price_type === "quotation" ? <WhatsAppPriceEnquiry itemType="service" itemName={service.name} branches={service.available_branches.map((branch) => ({ code: branch.code, name: branch.name, whatsapp_number: branch.whatsapp_number || branch.secondary_whatsapp_number || branch.telephone_number }))} /> : <ButtonLink
               href={`/book?service=${encodeURIComponent(service.slug)}`}
               size="large"
             >
               Book this service
-            </ButtonLink>
+            </ButtonLink>}
             <ButtonLink href="/services" variant="outline" size="large">
               Back to services
             </ButtonLink>
           </div>
         </div>
       </section>
+
+      {service.before_image_url && service.after_image_url ? (
+        <section className="service-result-pair" aria-labelledby="service-results-title">
+          <header><p>Real treatment result</p><h2 id="service-results-title">Before and after</h2><span>Approved client images are shown with explicit publication consent. Individual results vary.</span></header>
+          <div>
+            <figure><div><img src={service.before_image_url} alt={`Before ${service.name}`} /></div><figcaption>Before</figcaption></figure>
+            <figure><div><img src={service.after_image_url} alt={`After ${service.name}`} /></div><figcaption>After</figcaption></figure>
+          </div>
+        </section>
+      ) : null}
 
       <section className="service-detail-description" aria-labelledby="service-description-title">
         <div>
@@ -206,12 +217,12 @@ export default async function ServiceDetailPage({
                   </dd>
                 </div>
               </dl>
-              <ButtonLink
+              {service.price_type === "quotation" ? <WhatsAppPriceEnquiry compact itemType="service" itemName={service.name} branches={[{ code: branch.code, name: branch.name, whatsapp_number: branch.whatsapp_number || branch.secondary_whatsapp_number || branch.telephone_number }]} /> : <ButtonLink
                 href={`/book?service=${encodeURIComponent(service.slug)}&branch=${encodeURIComponent(branch.code)}`}
                 size="small"
               >
                 Book at {branch.name}
-              </ButtonLink>
+              </ButtonLink>}
             </article>
           ))}
         </div>

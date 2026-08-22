@@ -255,6 +255,9 @@ A visitor can understand the business, see accurate Ghana branch information, an
 - [x] Create the initial `ServiceCategory` model and seed categories.
 - [x] Create the initial `Service` model and seed services.
 - [x] Create service price options for fixed, starting, range, option-based, or quoted prices.
+- [x] Default non-consultation services to starting-from pricing and hold invoicing until management confirms the final treatment price.
+- [x] Route contact-for-price service enquiries to the selected branch's official WhatsApp instead of direct booking.
+- [x] Support one management-approved before/after result pair on each service detail page; link it to the customer's live signup/account photograph-advertising consent and keep source files in private media storage.
 - [x] Create and seed service-to-branch availability for Makola and Tse Addo.
 - [x] Add draft, published, and inactive states.
 - [x] Add public service list/detail APIs.
@@ -279,6 +282,8 @@ Administrators can publish real services without changing code. Visitors can fil
 - [x] `/management/products` — list products and stock summary.
 - [x] `/management/products/new` — create a product.
 - [x] `/management/products/[id]` — edit product, variants, SKU, prices, images, branches, and publication state.
+- [x] Allow products to use contact-for-price WhatsApp enquiries and prevent those products from entering the cart.
+- [x] Allow explicitly enabled pre-order variants with an estimated date, full-payment checkout, and no premature stock deduction.
 - [x] `/management/product-categories` — manage product categories.
 - [x] `/management/inventory` — view stock by branch.
 - [x] `/management/inventory/[variant-id]` — view stock movement history.

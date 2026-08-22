@@ -51,6 +51,7 @@ def send_booking_confirmation_email(booking) -> bool:
         for item in items
     ]
     payment_label = booking.get_payment_method_display()
+    estimated = booking.pricing_status == booking.PricingStatus.ESTIMATE
     message = "\n".join(
         [
             f"Hello {booking.customer.full_name},",
@@ -63,7 +64,7 @@ def send_booking_confirmation_email(booking) -> bool:
             "Services:",
             *service_lines,
             "",
-            f"Total: {_money(booking.total_amount)}",
+            f"{'Starting estimate' if estimated else 'Total'}: {_money(booking.total_amount)}",
             f"Payment choice: {payment_label}",
             "",
             (
@@ -98,13 +99,13 @@ def send_booking_confirmation_email(booking) -> bool:
           <tr><td style="padding:8px 0">Branch</td><td style="text-align:right">{escape(booking.branch.name)}</td></tr>
           <tr><td style="padding:8px 0">Preferred time</td><td style="text-align:right">{escape(requested_time.strftime('%d %B %Y, %I:%M %p'))}</td></tr>
           {service_rows}
-          <tr><td style="padding:12px 0;font-weight:bold">Total</td><td style="padding:12px 0;text-align:right;color:#ecc454;font-weight:bold">{escape(_money(booking.total_amount))}</td></tr>
+          <tr><td style="padding:12px 0;font-weight:bold">{"Starting estimate" if estimated else "Total"}</td><td style="padding:12px 0;text-align:right;color:#ecc454;font-weight:bold">{escape(_money(booking.total_amount))}</td></tr>
           <tr><td style="padding:8px 0">Payment choice</td><td style="text-align:right">{escape(payment_label)}</td></tr>
         </table>
         <p style="margin-top:28px">
           <a href="{escape(confirmation_url)}" style="display:inline-block;background:#dfa824;color:#080808;padding:14px 20px;text-decoration:none;font-weight:bold">View booking request</a>
         </p>
-        <p style="color:#aaa49a;font-size:13px">This email does not include private treatment notes or medical information.</p>
+        <p style="color:#aaa49a;font-size:13px">{"Management will assess the service and confirm the final amount before payment is requested. " if estimated else ""}This email does not include private treatment notes or medical information.</p>
       </div>
     </div>
     """

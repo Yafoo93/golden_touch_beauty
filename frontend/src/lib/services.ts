@@ -24,7 +24,9 @@ type ServiceResponse = {
   pricing_notes: string;
   duration_minutes: number;
   image_path: string;
+  has_result_images: boolean;
   available_at: string[];
+  available_branches: PublicBranch[];
   allows_pay_at_clinic: boolean;
   price_options: ServicePriceOption[];
 };
@@ -43,6 +45,8 @@ function serviceResponseToCard(service: ServiceResponse): ServiceCardProps {
     priceType: service.price_type,
     allowsPayAtClinic: service.allows_pay_at_clinic,
     priceOptions: service.price_options,
+    hasResultImages: service.has_result_images,
+    enquiryBranches: service.available_branches.map((branch) => ({ code: branch.code, name: branch.name, whatsapp_number: branch.whatsapp_number || branch.secondary_whatsapp_number || branch.telephone_number })),
     badge:
       service.price_type === "starting_from"
         ? "Starting from"
@@ -70,6 +74,8 @@ export type ServiceDetail = ServiceResponse & {
   allows_pay_at_clinic: boolean;
   is_consultation: boolean;
   available_branches: PublicBranch[];
+  before_image_url: string | null;
+  after_image_url: string | null;
   price_options: ServicePriceOption[];
 };
 

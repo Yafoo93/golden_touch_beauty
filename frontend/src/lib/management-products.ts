@@ -14,6 +14,7 @@ export type ManagementProduct = {
   slug: string;
   brand: string;
   category: string;
+  price_type: "fixed" | "contact";
   image_path: string;
   is_featured: boolean;
   is_active: boolean;
@@ -63,6 +64,7 @@ export type ManagementProductDetail = {
   category_id: string;
   category_name: string;
   description: string;
+  price_type: "fixed" | "contact";
   image_path: string;
   is_featured: boolean;
   is_active: boolean;

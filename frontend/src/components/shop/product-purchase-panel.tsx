@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useWishlist } from "@/components/wishlist/wishlist-context";
 import { formatGhanaCedis } from "@/lib/formatters";
 import type { ProductDetail, ProductVariant } from "@/lib/products";
+import { WhatsAppPriceEnquiry } from "@/components/catalogue/whatsapp-price-enquiry";
 
 function availabilityLabel(variant: ProductVariant) {
   if (variant.availability === "in_stock") return "In stock";
@@ -31,6 +32,11 @@ export function ProductPurchasePanel({ product }: { product: ProductDetail }) {
     [product.variants, variantId],
   );
   const canAdd = selected && selected.availability !== "out_of_stock";
+
+  if (selected && product.price_type === "contact") {
+    const branches = selected.available_at.map((branch) => ({ code: branch.branch_code, name: branch.branch_name, whatsapp_number: branch.whatsapp_number }));
+    return <div className="product-purchase-panel"><div className="product-purchase-panel__price"><span>Price</span><strong>Contact for price</strong></div><p>This product cannot be added to cart until the branch confirms its current price.</p><WhatsAppPriceEnquiry itemType="product" itemName={product.name} sku={selected.sku} branches={branches} /></div>;
+  }
 
   async function addToCart() {
     if (!selected || !canAdd) return;
