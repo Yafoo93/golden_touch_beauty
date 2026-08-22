@@ -74,8 +74,18 @@ export default async function NewProductPage() {
         <EmptyState title="Owner access required" description="Sign in with the owner account to create products." action={<ButtonLink href="/login">Sign in</ButtonLink>} />
       ) : result.status === "error" ? (
         <EmptyState title="Product options could not be loaded" description="Check that Django is running, then try again." action={<ButtonLink href="/management/products/new">Try again</ButtonLink>} />
-      ) : !result.categories.length || !result.branches.length ? (
-        <EmptyState title="Product setup is incomplete" description="At least one active product category and branch are required." />
+      ) : !result.categories.length ? (
+        <EmptyState
+          title="Create a product category first"
+          description="At least one active product category is required before a product can be created."
+          action={<ButtonLink href="/management/product-categories">Add product category</ButtonLink>}
+        />
+      ) : !result.branches.length ? (
+        <EmptyState
+          title="Create a branch first"
+          description="At least one active branch is required before a product can be created."
+          action={<ButtonLink href="/management/branches/new">Add branch</ButtonLink>}
+        />
       ) : (
         <ProductCreateForm categories={result.categories} branches={result.branches} />
       )}

@@ -81,6 +81,13 @@ export default async function ManagementProductsPage() {
           <ButtonLink href="/management/products/new" size="small">
             Add product
           </ButtonLink>
+          <ButtonLink
+            href="/management/product-categories"
+            variant="outline"
+            size="small"
+          >
+            Manage categories
+          </ButtonLink>
           <ButtonLink href="/shop" variant="outline" size="small">
             View public shop
           </ButtonLink>
