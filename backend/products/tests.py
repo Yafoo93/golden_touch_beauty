@@ -833,6 +833,43 @@ class ManagementProductListApiTests(TestCase):
         )
         product.image.delete(save=False)
 
+    def test_contact_for_price_product_does_not_require_prices(self):
+        self.client.force_login(self.owner)
+        png = base64.b64decode(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+        )
+
+        response = self.client.post(
+            reverse("products:management-list"),
+            {
+                "name": "Price On Request Product",
+                "category_id": str(self.product.category_id),
+                "description": "Management confirms the current price on WhatsApp.",
+                "price_type": "contact",
+                "image": SimpleUploadedFile("contact.png", png, content_type="image/png"),
+                "publication_state": "published",
+                "is_featured": "false",
+                "initial_variant_name": "Standard",
+                "initial_sku": "contact-price-standard",
+                "initial_is_preorder": "false",
+                "branch_stocks": json.dumps(
+                    [{
+                        "branch_id": str(self.branch.id),
+                        "quantity_on_hand": 1,
+                        "reorder_level": 0,
+                        "is_available": True,
+                    }]
+                ),
+            },
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.json())
+        product = Product.objects.get(name="Price On Request Product")
+        variant = product.variants.get()
+        self.assertEqual(variant.selling_price, 0)
+        self.assertEqual(variant.cost_price, 0)
+        product.image.delete(save=False)
+
     def test_owner_can_edit_product_variants_prices_and_branch_stock(self):
         self.client.force_login(self.owner)
         variant = self.product.variants.get()
@@ -911,6 +948,45 @@ class ManagementProductListApiTests(TestCase):
                 actor=self.owner,
             ).exists()
         )
+
+    def test_owner_can_change_product_to_contact_price_without_variant_prices(self):
+        self.client.force_login(self.owner)
+        variant = self.product.variants.get()
+
+        response = self.client.patch(
+            reverse("products:management-detail", args=[self.product.id]),
+            {
+                "name": self.product.name,
+                "brand": self.product.brand,
+                "category_id": str(self.product.category_id),
+                "description": self.product.description,
+                "price_type": "contact",
+                "is_featured": "false",
+                "publication_state": "published",
+                "variants": json.dumps(
+                    [{
+                        "id": str(variant.id),
+                        "name": variant.name,
+                        "sku": variant.sku,
+                        "is_preorder": False,
+                        "estimated_availability_date": None,
+                        "is_active": True,
+                        "stocks": [{
+                            "branch_id": str(self.branch.id),
+                            "quantity_on_hand": 8,
+                            "reorder_level": 6,
+                            "is_available": True,
+                        }],
+                    }]
+                ),
+            },
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.json())
+        variant.refresh_from_db()
+        self.assertEqual(variant.selling_price, 0)
+        self.assertEqual(variant.cost_price, 0)
 
     def test_product_stock_cannot_be_reduced_below_reserved_quantity(self):
         self.client.force_login(self.owner)

@@ -5008,6 +5008,7 @@ html {
 }
 
 .product-card__actions {
+  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 0.45rem;
