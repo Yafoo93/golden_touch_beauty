@@ -55,7 +55,7 @@ export function ServiceCard({
           src={imageSrc}
           alt=""
           fill
-          sizes="(max-width: 48rem) 100vw, (max-width: 75rem) 50vw, 33vw"
+          sizes="(max-width: 48rem) 50vw, (max-width: 64rem) 33vw, 25vw"
           className="catalogue-card__image"
         />
           {badge ? <span className="catalogue-card__badge">{badge}</span> : null}
