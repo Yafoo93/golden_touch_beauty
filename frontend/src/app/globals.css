@@ -44,11 +44,12 @@ html {
 }
 
 .site-header__inner {
+  position: relative;
   width: min(100% - 3rem, 92rem);
   height: 100%;
   margin-inline: auto;
   display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: clamp(1rem, 2vw, 2rem);
 }
@@ -91,9 +92,12 @@ html {
 }
 
 .primary-nav {
+  position: absolute;
+  left: 50%;
   display: flex;
   align-items: center;
   gap: clamp(1.25rem, 2.8vw, 2.5rem);
+  transform: translateX(-50%);
 }
 
 .primary-nav__link {
