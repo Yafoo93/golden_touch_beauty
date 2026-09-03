@@ -91,6 +91,33 @@ function WhatsAppIcon() {
   );
 }
 
+function InstagramIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4.25" />
+      <circle cx="17.4" cy="6.7" r="0.75" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function TikTokIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M15 4v10.2a4.2 4.2 0 1 1-3.4-4.1" />
+      <path d="M15 4c.6 2.5 2.1 3.9 4.5 4.3" />
+    </svg>
+  );
+}
+
+function FacebookIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M14.5 21v-8h2.8l.5-3.2h-3.3V7.7c0-.9.3-1.7 1.8-1.7H18V3.1c-.6-.1-1.4-.1-2.4-.1-2.5 0-4.2 1.5-4.2 4.4v2.4H8.5V13h2.9v8" />
+    </svg>
+  );
+}
+
 export function SiteFooter() {
   const pathname = usePathname();
   const [branches, setBranches] = useState(fallbackBranches);
@@ -130,11 +157,41 @@ export function SiteFooter() {
             Professional beauty, wellness, and personal-care services across
             our Ghana branches.
           </p>
-          <div className="site-footer__socials" aria-label="WhatsApp contacts">
+          <div
+            className="site-footer__socials"
+            aria-label="Golden Touch social media and WhatsApp contacts"
+          >
+            <a
+              href="https://www.instagram.com/golden_touch_beauty_center?igsi=N2h3YnZwazZmYWlv"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Follow Golden Touch Beauty Centre on Instagram"
+            >
+              <InstagramIcon />
+              Instagram
+            </a>
+            <a
+              href="https://www.tiktok.com/@marcelwaygma?_r=1&_t=ZS-99KI9DifbQS"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Follow Golden Touch Beauty Centre on TikTok"
+            >
+              <TikTokIcon />
+              TikTok
+            </a>
+            <a
+              href="https://www.facebook.com/share/1ByZUTLR6G/?mibextid=wwXIfr"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Follow Golden Touch Beauty Centre on Facebook"
+            >
+              <FacebookIcon />
+              Facebook
+            </a>
             <a
               href="https://wa.me/233241370429"
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               aria-label="Chat with Golden Touch on WhatsApp at +233 241 370 429"
             >
               <WhatsAppIcon />
@@ -143,7 +200,7 @@ export function SiteFooter() {
             <a
               href="https://wa.me/233257711182"
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               aria-label="Chat with Golden Touch on WhatsApp at +233 257 711 182"
             >
               <WhatsAppIcon />
